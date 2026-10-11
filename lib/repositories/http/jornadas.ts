@@ -14,7 +14,6 @@ import {
   type RegistroAvance,
   type TipoAlertaJornada,
 } from "@/lib/domain"
-import { formatDiaLargo } from "@/lib/format"
 import {
   alertasDe,
   estimar,
@@ -246,11 +245,6 @@ async function getJornada(id: number): Promise<Jornada> {
  */
 const VALIDAR_FECHA_HORA = false
 
-/** Fecha de hoy en la planta (YYYY-MM-DD). */
-function hoyEnPlanta(): string {
-  return aLocal(new Date()).slice(0, 10)
-}
-
 export const httpJornadas: JornadasRepository = {
   async getActual(plantaId) {
     const planes = await planesDePlanta(plantaId)
@@ -294,12 +288,6 @@ export const httpJornadas: JornadasRepository = {
     const rawDia = raw.days.find((d) => d.date === input.fecha)
     if (!rawDia?.id) throw new ApiError("El día no pertenece al plan.", 400)
     if (rawDia.workday) throw new ApiError("La jornada de este día ya se inició.", 409)
-    if (VALIDAR_FECHA_HORA && hoyEnPlanta() !== input.fecha) {
-      throw new ApiError(
-        `Esta jornada es del ${formatDiaLargo(input.fecha)}; solo se puede iniciar ese día.`,
-        409,
-      )
-    }
 
     if (!Number.isInteger(input.trabajadores) || input.trabajadores < 1) {
       throw new ApiError("Indica con cuántas personas inicias.", 400)
