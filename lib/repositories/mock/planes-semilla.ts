@@ -82,8 +82,9 @@ export function planesSemilla(hoy = new Date()): Plan[] {
     const lunes = mondayOfIsoWeek(year, s.semana)
     const parametros = { ...parametrosDe(planta), ...s.cambios }
     const calculado = calcularPlan({
-      cosecha: s.jabas.map((jabas, i) => ({ fecha: toIsoDate(addDays(lunes, i)), jabas })),
+      cosecha: s.jabas.map((jabas, i) => ({ frutaId: 1, fruta: "Uva", fecha: toIsoDate(addDays(lunes, i)), jabas })),
       totalComercial: s.comercial,
+      comercialPorFruta: [{ frutaId: 1, jabas: s.comercial }],
       parametros,
       parametrosModificados: s.cambios !== undefined,
       escenarioCosecha: "PROYECTADA",

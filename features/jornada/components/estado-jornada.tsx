@@ -120,6 +120,18 @@ export function EstadoJornada({ jornada, dia, parametros: p }: EstadoJornadaProp
           />
         </div>
       </div>
+      {dia.frutaMeta?.length ? <section aria-label="Cumplimiento por fruta" className="rounded-xl border p-4">
+        <h3 className="font-heading text-lg font-semibold">Cumplimiento por fruta</h3>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {dia.frutaMeta.map((target) => {
+            const processed = jornada.jabasPorFruta?.find((row) => row.frutaId === target.frutaId)?.jabas ?? 0
+            return <li key={target.frutaId} className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2">
+              <span>{target.fruta}</span>
+              <span className="text-right text-sm tabular-nums">{formatInt(processed)} / {formatInt(target.jabasMeta)} jabas</span>
+            </li>
+          })}
+        </ul>
+      </section> : null}
     </>
   )
 }

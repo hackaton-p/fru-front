@@ -24,12 +24,13 @@ interface PlanSemanalViewProps {
 
 /** Planificador · Plan semanal. */
 export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }: PlanSemanalViewProps) {
-  const { query, planta, fruta, cosecha, comercial, plan, erroresCarga } = data
+  const { query, planta, fruta, frutas, cosecha, comercial, plan, erroresCarga } = data
   const canGestionar = !readOnly && can(user.rol, "plan:gestionar")
   const cosechaLista = cosecha.length > 0
   const comercialLista = comercial.length > 0
   const dates = planningDates(query)
-  const proyeccionesListas = comercialLista && dates.length > 0 && dates.every(date => cosecha.some(day => day.fecha === date))
+  const frutasPedidas = new Set(comercial.map(row => row.frutaId).filter((id): id is number => id !== undefined))
+  const proyeccionesListas = comercialLista && dates.length > 0 && [...frutasPedidas].every(frutaId => dates.every(date => cosecha.some(day => day.frutaId === frutaId && day.fecha === date)))
   const configuracionLista = Boolean(planta.configuradaAt)
   const defaults = parametrosDe(planta)
 
@@ -65,6 +66,7 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
         semana={query.semana}
         planta={planta}
         fruta={fruta}
+        frutas={frutas}
         cosecha={cosecha}
         planId={plan?.id ?? null}
         estado={plan?.estado ?? null}
@@ -107,7 +109,7 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <ProgramaComercialCard comercial={comercial} query={query} canImport={canGestionar} planId={plan?.id} />
+        <ProgramaComercialCard comercial={comercial} query={query} frutas={frutas} canImport={canGestionar} />
         <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} planId={plan?.id} />
       </div>
 

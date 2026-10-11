@@ -18,8 +18,8 @@ Three roles at Pura Fruit packing plants (Piura · Santa María and Sullana). Al
 
 Plan de Packing replaces improvised planning. Today harvest projects how much fruit arrives and sales projects how much it sells, but no plan crosses both with plant capacity, which leads to improvised staffing, long days, and the risk of a second shift. The system:
 
-1. Takes the harvest projection (per day) and the commercial program (per client), both loaded from Excel and read-only.
-2. Calculates a weekly plan per plant: daily target, workers, and hours.
+1. Takes harvest projections by fruit and day, and the commercial order by customer and fruit; both can be loaded from Excel and are read-only after registration.
+2. Calculates one weekly plan per plant from the combined order and harvest: daily total and fruit targets, workers, and hours.
 3. Sends it through approval by the subgerente.
 4. During each shift, records progress, compares incoming volume against the plan, raises alerts, and adjusts hours.
 5. At closing, records real hours, target met, and the difference.
@@ -41,13 +41,13 @@ The plan is calculated, never guessed: workers and hours come from the plant's o
 
 - Stack: Next.js 16 (App Router) + shadcn/ui + Tailwind v4 frontend; NestJS backend (`../purafruit-back`). All calculations live in the backend (`PlanCalculatorService`); the front only mirrors formulas for live previews. `API_MOCK=true` serves in-memory mock data while the API is unavailable.
 - Interface language: Spanish (`lang="es"`).
-- Unit: **jabas only**. No boxes, no conversions. Hours are decimal (9.5 = 9 h 30 min).
-- One plan per plant, fruit, and week. One shift only. No production lines in the MVP.
+- Unit: **jabas**. Customers may call them boxes; both words refer to the same unit and have no conversion. Hours are decimal (9.5 = 9 h 30 min).
+- One plan per plant and week, with targets grouped by fruit. The commercial order is grouped by customer and fruit. One shift only. No production lines in the MVP.
 - Workers are calculated by the system, never entered by the planner. All staff counts (packing, almacén, trazabilidad, mantenimiento, saneamiento).
 - Plant configuration holds defaults only; each plan stores its final values (`parametrosUsados`), and values that differ from the default are flagged "(default X)".
 - Projections are immutable. The simulation is never saved until applied as the official plan.
 - Plan states: BORRADOR → PENDIENTE → APROBADO / RECHAZADO → EN_EJECUCION → CERRADO.
-- Fruits: uva and arándano; varieties come later.
+- Fruits: uva and arándano; journey progress is recorded per fruit. Varieties come later.
 - Undecided / out of MVP: official yield and max-staff values (current ones are inferred from week 41), per-client commercial gap, fruit carried to the next day, approval and hour-adjustment history, real Sullana data for "Curso de la semana".
 
 ## Brand Commitments

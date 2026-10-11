@@ -52,9 +52,9 @@ async function PlanSemanal({ searchParams }: Pick<PageProps<"/planificador">, "s
     return <>{back}<Alert><AlertTitle>Configura la planta antes de crear la planificación</AlertTitle><AlertDescription><p>{planta.nombre} necesita sus parámetros por defecto completos y confirmados.</p><Button asChild className="mt-2"><Link href={`/configuracion?planta=${planta.id}`}>Configurar {planta.nombre}</Link></Button><Link href={`/planificador?vista=crear&planta=${planta.id}`} className="ml-4 text-primary underline underline-offset-4">Ya configuré la planta, continuar</Link></AlertDescription></Alert></>
   }
   const start = typeof params.inicio === "string" && canSelectPlanningDate(params.inicio, null, minimumMonday) ? params.inicio : undefined
-  if (!isValidPlanningSelection(start, query.fechas, minimumMonday)) {
-    const fruta = await repos.frutas.getById(query.frutaId)
-    return <>{back}<div><p className="text-sm text-muted-foreground">Planta {planta.nombre} · {fruta.nombre}</p><h1 className="font-heading text-3xl font-bold">Nueva planificación</h1><p className="text-muted-foreground">Elige un lunes y selecciona los días de esa semana que deseas planificar. Mínimo dos días, incluyendo el lunes.</p></div><PlanningPeriod key={start ?? "nuevo"} query={{ ...query, inicio: start, cantidadDias: undefined, fechas: undefined }} locked={false} minimumMonday={minimumMonday} /></>
+  if (mode === "crear" && !isValidPlanningSelection(start, query.fechas, minimumMonday)) {
+    const planta = await repos.plantas.getById(query.plantaId)
+    return <>{back}<div><p className="text-sm text-muted-foreground">Planta {planta.nombre} · todas las frutas</p><h1 className="font-heading text-3xl font-bold">Nueva planificación semanal</h1><p className="text-muted-foreground">El pedido comercial define las frutas de la semana. Elige un lunes y selecciona los días que deseas planificar; incluye al menos el lunes.</p></div><PlanningPeriod key={start ?? "nuevo"} query={{ ...query, inicio: start, cantidadDias: undefined, fechas: undefined }} locked={false} minimumMonday={minimumMonday} /></>
   }
   const data = await getPlanSemanalData(query, undefined, true)
   return <>{back}<PlanSemanalView data={data} user={user} readOnly={false} minimumMonday={minimumMonday} /></>

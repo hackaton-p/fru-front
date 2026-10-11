@@ -61,16 +61,22 @@ const COMERCIAL: Record<number, [string, number][]> = {
   ],
 }
 
-export function cosechaMock(plantaId: number, semana: number): ProyeccionCosechaDia[] {
+export function cosechaMock(plantaId: number, semana: number, frutaId = 1): ProyeccionCosechaDia[] {
+  if (frutaId !== 1) return []
   const lunes = mondayOfIsoWeek(new Date().getUTCFullYear(), semana)
   return (COSECHA[plantaId] ?? []).map((jabas, i) => ({
+    frutaId,
+    fruta: FRUTAS.find((fruit) => fruit.id === frutaId)?.nombre ?? `Fruta ${frutaId}`,
     fecha: toIsoDate(addDays(lunes, i)),
     jabas,
   }))
 }
 
-export function comercialMock(plantaId: number): ProyeccionComercialCliente[] {
+export function comercialMock(plantaId: number, frutaId = 1): ProyeccionComercialCliente[] {
+  if (frutaId !== 1) return []
   return (COMERCIAL[plantaId] ?? []).map(([cliente, jabas], i) => ({
+    frutaId,
+    fruta: FRUTAS.find((fruit) => fruit.id === frutaId)?.nombre ?? `Fruta ${frutaId}`,
     clienteId: i + 1,
     cliente,
     jabas,

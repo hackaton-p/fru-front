@@ -17,4 +17,11 @@ export function tonAJabas(toneladas: number): number {
 export interface Fruta {
   id: number
   nombre: string
+  activo?: boolean
+  plantaIds?: number[]
+}
+
+export type FrutaCatalogoInput = Pick<Fruta, "nombre"> & {
+  plantaIds: number[]
+  activo?: boolean
 }

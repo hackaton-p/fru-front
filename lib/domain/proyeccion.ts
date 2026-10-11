@@ -13,6 +13,8 @@ export interface SemanaQuery {
 
 /** Cosecha prevista para un día, en jabas (única unidad de fruta). */
 export interface ProyeccionCosechaDia {
+  frutaId?: number
+  fruta?: string
   /** Fecha ISO (YYYY-MM-DD). */
   fecha: string
   jabas: number
@@ -20,6 +22,8 @@ export interface ProyeccionCosechaDia {
 
 /** Programa comercial de la semana para un cliente, en jabas. */
 export interface ProyeccionComercialCliente {
+  frutaId?: number
+  fruta?: string
   clienteId: number
   cliente: string
   /** País del cliente, si el origen de datos lo conoce. */
@@ -43,5 +47,5 @@ export interface GuardarProyeccionInput extends SemanaQuery {
   /** Plan en edición: si viene, se recalcula con la proyección guardada. */
   planId?: number
   tipo: TipoProyeccion
-  registros: { fecha?: string; cliente?: string; pais?: string; jabas: number }[]
+  registros: { fecha?: string; cliente?: string; pais?: string; frutaId?: number; jabas: number }[]
 }

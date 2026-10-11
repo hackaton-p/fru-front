@@ -29,7 +29,7 @@ export async function PlanExistente({ id, mode }: PlanExistenteProps) {
   const readOnly = mode === "detalle" || !editable
   const query = {
     plantaId: selectedPlan.plantaId,
-    frutaId: selectedPlan.frutaId,
+    frutaId: selectedPlan.frutaId ?? 1,
     anio: selectedPlan.anio,
     semana: selectedPlan.semana,
     inicio: selectedPlan.dias[0]?.fecha,

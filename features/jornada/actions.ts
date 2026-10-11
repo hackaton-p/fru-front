@@ -21,6 +21,7 @@ const idSchema = z.number().int().positive()
 const entero = (campo: string) =>
   z.number({ error: `Ingresa ${campo}.` }).int(`${campo} debe ser un número entero.`).min(0, `${campo} no puede ser negativo.`)
 const horaSchema = z.string().regex(/^\d{2}:\d{2}$/, "Ingresa la hora en formato HH:mm.")
+const frutaJabasSchema = z.array(z.object({ frutaId: idSchema, fruta: z.string().min(1), jabas: entero("jabas procesadas") })).min(1)
 
 const iniciarSchema = z.object({
   planId: idSchema,
@@ -38,6 +39,7 @@ const registroSchema = z.discriminatedUnion("tipo", [
     hora: horaSchema,
     jabasRecibidasAcum: entero("Jabas recibidas"),
     jabasProcesadasAcum: entero("Jabas procesadas"),
+    jabasPorFruta: frutaJabasSchema.optional(),
   }),
   z.object({
     tipo: z.literal("PERSONAL"),
@@ -69,6 +71,7 @@ const cierreSchema = z
       .positive("Ingresa las horas trabajadas.")
       .max(24),
     jabasProcesadas: entero("Jabas procesadas"),
+    jabasPorFruta: frutaJabasSchema.optional(),
     jabasDescarte: entero("Jabas de descarte"),
     kgLoose: z.number({ error: "Ingresa los kg loose." }).min(0, "Los kg no pueden ser negativos."),
     kgFijo: z.number({ error: "Ingresa los kg fijo." }).min(0, "Los kg no pueden ser negativos."),
@@ -76,6 +79,10 @@ const cierreSchema = z
   .refine((d) => d.jabasDescarte <= d.jabasProcesadas, {
     message: "El descarte no puede superar las jabas procesadas.",
     path: ["jabasDescarte"],
+  })
+  .refine((d) => !d.jabasPorFruta || Math.abs(d.jabasPorFruta.reduce((sum, row) => sum + row.jabas, 0) - d.jabasProcesadas) < 0.0001, {
+    message: "El desglose por fruta debe sumar las jabas procesadas.",
+    path: ["jabasPorFruta"],
   })
 
 async function assertPuedeRegistrar() {

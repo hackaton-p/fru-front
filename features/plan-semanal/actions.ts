@@ -56,7 +56,7 @@ async function regenerarPlan(planId: number) {
   await repos.planes.aplicar({
     planId,
     plantaId: plan.plantaId,
-    frutaId: plan.frutaId,
+    frutaId: plan.frutaId ?? 1,
     anio: plan.anio,
     semana: plan.semana,
     inicio: plan.dias[0]?.fecha,
@@ -146,6 +146,7 @@ export async function guardarProyeccionAction(input: GuardarProyeccionInput): Pr
         fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         cliente: z.string().trim().min(1).max(255).optional(),
         pais: z.string().trim().min(2).max(100).optional(),
+        frutaId: z.number().int().positive().optional(),
         jabas: z.number().min(0).max(1e9),
       })).min(1).max(500),
     }).refine(data => data.tipo !== "COSECHA" || data.registros.every(row => Number.isInteger(row.jabas)), {
@@ -154,10 +155,26 @@ export async function guardarProyeccionAction(input: GuardarProyeccionInput): Pr
     })
     const data = schema.parse(input)
     await assertPuedeGestionar(data.plantaId)
-    if (data.registros.some(r => data.tipo === "COSECHA" ? !r.fecha : !r.cliente || !r.pais)) {
+    if (data.registros.some(r => data.tipo === "COSECHA" ? !r.fecha : !r.cliente || !r.pais || !r.frutaId)) {
       throw new Error("Completa los registros de la proyección.")
     }
-    const result = await getRepositories().proyecciones.guardar(data)
+    const repos = getRepositories()
+    const result = data.tipo === "COMERCIAL"
+      ? await (async () => {
+          const porFruta = data.registros.reduce((groups, row) => {
+            const rows = groups.get(row.frutaId!) ?? []
+            rows.push(row)
+            groups.set(row.frutaId!, rows)
+            return groups
+          }, new Map<number, typeof data.registros>())
+          let registros = 0
+          for (const [frutaId, rows] of porFruta) {
+            const saved = await repos.proyecciones.guardar({ ...data, frutaId, registros: rows })
+            registros += saved.registros
+          }
+          return { registros }
+        })()
+      : await repos.proyecciones.guardar(data)
     if (data.planId) await regenerarPlan(data.planId)
     revalidatePath(RUTA)
     return { ...result, planActualizado: Boolean(data.planId) }

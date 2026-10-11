@@ -25,17 +25,20 @@ interface CerrarJornadaFormProps {
   /** Valores sugeridos: el estimado vigente. */
   horasSugeridas: number
   jabasSugeridas: number
+  frutaMeta?: { frutaId: number; fruta: string; jabasMeta: number }[]
+  jabasPorFruta?: { frutaId: number; fruta: string; jabas: number }[]
 }
 
 type Valores = Record<CampoCierre, string>
 
 /** Cierre: cifras reales del día, con confirmación antes de cerrar. */
-export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas }: CerrarJornadaFormProps) {
+export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas, frutaMeta = [], jabasPorFruta = [] }: CerrarJornadaFormProps) {
   const [valores, setValores] = useState<Valores>({
     horasTrabajadas: String(Math.round(horasSugeridas * 10) / 10),
     jabasProcesadas: String(Math.round(jabasSugeridas)),
   })
   const [confirmando, setConfirmando] = useState(false)
+  const [porFruta, setPorFruta] = useState<Record<number, string>>(() => Object.fromEntries(frutaMeta.map((target) => [target.frutaId, String(jabasPorFruta.find((row) => row.frutaId === target.frutaId)?.jabas ?? (jabasSugeridas * target.jabasMeta / Math.max(1, frutaMeta.reduce((sum, row) => sum + row.jabasMeta, 0))))])))
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -44,6 +47,7 @@ export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas }:
   const datos: CerrarJornadaInput = {
     horasTrabajadas: num("horasTrabajadas"),
     jabasProcesadas: num("jabasProcesadas"),
+    jabasPorFruta: frutaMeta.length ? frutaMeta.map((row) => ({ frutaId: row.frutaId, fruta: row.fruta, jabas: Number(porFruta[row.frutaId] ?? 0) })) : undefined,
     jabasDescarte: 0,
     kgLoose: 0,
     kgFijo: 0,
@@ -55,6 +59,10 @@ export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas }:
     if (faltante) {
       setError(`Completa «${faltante.label}».`)
       document.getElementById(`cierre-${faltante.key}`)?.focus()
+      return
+    }
+    if (datos.jabasPorFruta && Math.abs(datos.jabasPorFruta.reduce((sum, row) => sum + row.jabas, 0) - datos.jabasProcesadas) >= 0.0001) {
+      setError("El desglose por fruta debe sumar las jabas procesadas.")
       return
     }
     setError(null)
@@ -104,7 +112,12 @@ export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas }:
                 />
               </Field>
             ))}
+            {frutaMeta.map((row) => <Field key={row.frutaId}>
+              <FieldLabel htmlFor={`cierre-fruta-${row.frutaId}`}>{row.fruta} (jabas)</FieldLabel>
+              <Input id={`cierre-fruta-${row.frutaId}`} type="number" inputMode="numeric" min={0} step={1} value={porFruta[row.frutaId] ?? "0"} onChange={(e) => { setPorFruta((current) => ({ ...current, [row.frutaId]: e.target.value })); setConfirmando(false) }} className="h-12 text-lg tabular-nums md:text-lg" disabled={isPending} />
+            </Field>)}
           </div>
+          {frutaMeta.length ? <p className="text-sm text-muted-foreground">El desglose debe sumar {formatInt(datos.jabasProcesadas)} jabas.</p> : null}
 
           {error ? <FieldError>{error}</FieldError> : null}
 

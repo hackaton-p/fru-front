@@ -20,7 +20,7 @@ export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, pl
     },
     {
       titulo: "Cargar programa comercial",
-      detalle: comercialLista ? "Programa comercial registrado" : "Importa Excel o agrega registros por cliente",
+      detalle: comercialLista ? "Pedido semanal registrado por cliente y fruta" : "Carga el pedido por cliente y fruta",
       listo: comercialLista,
     },
     {

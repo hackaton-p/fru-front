@@ -95,7 +95,7 @@ export function crearJornadasMock(
     if (jornada) return jornada.estado === "CERRADA"
     const curso = cursoMock({
       plantaId: plan.plantaId,
-      frutaId: plan.frutaId,
+      frutaId: plan.frutaId ?? 1,
       anio: plan.anio,
       semana: plan.semana,
     })
@@ -208,6 +208,7 @@ export function crearJornadasMock(
           horaInicio: fechaHora(dia.fecha, p.horaInicio),
           horasEstimadasInicio: dia.jabasMeta / (inicio * p.rendimientoPersonaHora * p.factorEficiencia),
           areas,
+          jabasPorFruta: (dia.frutaMeta ?? []).map((row) => ({ frutaId: row.frutaId, fruta: row.fruta, jabas: 0 })),
           registros: [],
           cierre: null,
         },
@@ -256,6 +257,11 @@ export function crearJornadasMock(
         ) {
           throw new ApiError("Los acumulados no pueden ser menores que en el avance anterior.", 400)
         }
+        if (input.jabasPorFruta) {
+          const total = input.jabasPorFruta.reduce((sum, row) => sum + row.jabas, 0)
+          if (Math.abs(total - input.jabasProcesadasAcum) >= 0.0001) throw new ApiError("El desglose por fruta debe sumar las jabas procesadas.", 400)
+          if (previo?.tipo === "AVANCE" && input.jabasPorFruta.some((row) => row.jabas < (previo.jabasPorFruta?.find((item) => item.frutaId === row.frutaId)?.jabas ?? 0))) throw new ApiError("El acumulado por fruta no puede disminuir.", 400)
+        }
       } else if (input.tipo === "PERSONAL") {
         if (!Number.isInteger(input.cambioPersonal) || input.cambioPersonal === 0) {
           throw new ApiError("Indica cuántas personas llegan o salen.", 400)
@@ -290,7 +296,7 @@ export function crearJornadasMock(
         alertas: alertasDe(evento, jornada.horaInicio, est, ctx),
       } as RegistroAvance
 
-      return guardar({ ...jornada, areas, registros: [...jornada.registros, registro] }, plan)
+      return guardar({ ...jornada, areas, ...(input.tipo === "AVANCE" && input.jabasPorFruta ? { jabasPorFruta: input.jabasPorFruta } : {}), registros: [...jornada.registros, registro] }, plan)
     },
 
     async ajustarHoras(jornadaId, input) {
@@ -315,7 +321,7 @@ export function crearJornadasMock(
     async cerrar(jornadaId, input) {
       await delay()
       const jornada = abierta(jornadaId)
-      const valores = Object.values(input)
+      const valores = Object.entries(input).filter(([key]) => key !== "jabasPorFruta").map(([, value]) => value)
       if (valores.some((v) => !Number.isFinite(v) || v < 0)) {
         throw new ApiError("Los valores del cierre no pueden ser negativos.", 400)
       }
@@ -323,6 +329,7 @@ export function crearJornadasMock(
       if (input.jabasDescarte > input.jabasProcesadas) {
         throw new ApiError("El descarte no puede superar las jabas procesadas.", 400)
       }
+      if (input.jabasPorFruta && Math.abs(input.jabasPorFruta.reduce((sum, row) => sum + row.jabas, 0) - input.jabasProcesadas) >= 0.0001) throw new ApiError("El desglose por fruta debe sumar las jabas procesadas.", 400)
       const plan = planDe(jornada.planId)
       const meta = diaDe(plan, jornada.fecha).jabasMeta
       const cerrada = guardar(
@@ -334,6 +341,7 @@ export function crearJornadasMock(
             metaCumplida: input.jabasProcesadas >= meta,
             diferencia: input.jabasProcesadas - meta,
           },
+          jabasPorFruta: input.jabasPorFruta ?? jornada.jabasPorFruta,
         },
         plan,
       )

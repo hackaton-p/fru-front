@@ -104,9 +104,10 @@ export function JornadaView({ data }: { data: JornadaData }) {
               ultimoAvance={(() => {
                 const a = jornada.registros.findLast((r) => r.tipo === "AVANCE")
                 return a?.tipo === "AVANCE"
-                  ? { recibidas: a.jabasRecibidasAcum, procesadas: a.jabasProcesadasAcum }
+                  ? { recibidas: a.jabasRecibidasAcum, procesadas: a.jabasProcesadasAcum, jabasPorFruta: a.jabasPorFruta }
                   : null
               })()}
+              frutaMeta={dia.frutaMeta}
             />
             <RegistrosList jornada={jornada} dia={dia} parametros={p} />
           </div>
@@ -114,6 +115,8 @@ export function JornadaView({ data }: { data: JornadaData }) {
             jornadaId={jornada.id}
             horasSugeridas={jornada.estimacion.horasEstimadas}
             jabasSugeridas={jornada.estimacion.volumenDia}
+            frutaMeta={dia.frutaMeta}
+            jabasPorFruta={jornada.jabasPorFruta}
           />
           {demo ? (
             <div>

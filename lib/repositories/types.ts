@@ -5,6 +5,7 @@ import type {
   CursoSemana,
   EstadoPlan,
   Fruta,
+  FrutaCatalogoInput,
   IniciarJornadaInput,
   ImportarProyeccionInput,
   GuardarProyeccionInput,
@@ -29,14 +30,21 @@ import type {
  */
 
 export interface PlantasRepository {
-  listar(): Promise<Planta[]>
+  listar(options?: { includeInactive?: boolean }): Promise<Planta[]>
   getById(id: number): Promise<Planta>
   /** Cambia los valores por defecto. Los planes ya guardados conservan sus `parametrosUsados`. */
   actualizar(id: number, parametros: ParametrosPlanta): Promise<Planta>
+  crear(input: { nombre: string }): Promise<Planta>
+  actualizarCatalogo(id: number, input: { nombre: string; activo?: boolean }): Promise<Planta>
+  desactivar(id: number): Promise<void>
 }
 
 export interface FrutasRepository {
+  listar(plantId?: number, includeInactive?: boolean): Promise<Fruta[]>
   getById(id: number): Promise<Fruta>
+  crear(input: FrutaCatalogoInput): Promise<Fruta>
+  actualizar(id: number, input: FrutaCatalogoInput): Promise<Fruta>
+  desactivar(id: number): Promise<void>
 }
 
 export interface ProyeccionesRepository {

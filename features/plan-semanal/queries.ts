@@ -64,6 +64,7 @@ export interface PlanSemanalData {
   query: SemanaQuery
   planta: Planta
   fruta: Fruta
+  frutas: Fruta[]
   cosecha: ProyeccionCosechaDia[]
   comercial: ProyeccionComercialCliente[]
   plan: Plan | null
@@ -80,9 +81,10 @@ export interface PlanSemanalData {
 export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan, creating = false): Promise<PlanSemanalData> {
   const repos = getRepositories()
   const erroresCarga: string[] = []
-  const [plantaResult, frutaResult, cosechaResult, comercialResult, planResult] = await Promise.allSettled([
+  const [plantaResult, frutaResult, frutasResult, cosechaResult, comercialResult, planResult] = await Promise.allSettled([
     repos.plantas.getById(query.plantaId),
     repos.frutas.getById(query.frutaId),
+    repos.frutas.listar(query.plantaId),
     repos.proyecciones.getCosecha(query),
     repos.proyecciones.getComercial(query),
     selectedPlan ? Promise.resolve(selectedPlan) : creating ? Promise.resolve(null) : repos.planes.getVigente(query),
@@ -115,6 +117,8 @@ export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan
     ? frutaResult.value
     : { id: query.frutaId, nombre: `Fruta ${query.frutaId}` }
   if (frutaResult.status === "rejected") registrarError(frutaResult, "No se pudo leer la fruta")
+  const frutas = frutasResult.status === "fulfilled" ? frutasResult.value : [fruta]
+  if (frutasResult.status === "rejected") registrarError(frutasResult, "No se pudo leer el catálogo de frutas")
 
   // El back guarda las proyecciones por planta, fruta, año y semana (no por plan):
   // se muestran solo los días que este plan planifica.
@@ -155,5 +159,5 @@ export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan
     simulacionInicial = { escenario: "PROYECTADA", parametros: defaults, resultado: resultadoVacio }
   }
 
-  return { query, planta, fruta, cosecha, comercial, plan, erroresCarga, simulacionInicial }
+  return { query, planta, fruta, frutas, cosecha, comercial, plan, erroresCarga, simulacionInicial }
 }
