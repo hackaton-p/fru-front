@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-10T00:00:00Z",
+  "generatedAt": "2026-10-10T12:00:00Z",
   "title": "Design System: Plan de Packing · Pura Fruit",
   "extensions": {
     "colorMeta": {
@@ -278,6 +278,10 @@
       }
     },
     "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The one answer figure of an operator screen (live hours estimate); state-colored, tabular."
+      },
       "headline": {
         "displayName": "Headline",
         "purpose": "One H1 per page; Baloo 2 700 with tight tracking."
@@ -346,7 +350,7 @@
       {
         "name": "sm",
         "value": "640px",
-        "purpose": "Page padding grows to 24px sides / 32px vertical."
+        "purpose": "Page padding grows to 24px sides / 32px vertical. Stage indicator shows every stage name; operator tables show their secondary columns instead of the folded line."
       },
       {
         "name": "md",
@@ -356,7 +360,7 @@
       {
         "name": "lg",
         "value": "1024px",
-        "purpose": "Heading and filters share a row; 2fr/1fr card splits."
+        "purpose": "Heading and filters share a row; 2fr/1fr card splits. Live-result aside (24rem) sits beside its form and sticks at top-20; stage indicator joins the heading row."
       }
     ],
     "knownGaps": [
@@ -437,6 +441,46 @@
       "description": "Signature: indicator-by-day table with sticky first column, leaf-mist section rows, and coral down-arrow cells for below-plan execution.",
       "html": "<table class=\"ds-matrix\"><thead><tr><th class=\"ds-sticky\">Indicador</th><th class=\"ds-num\">Lun 6</th><th class=\"ds-num\">Mar 7</th><th class=\"ds-num\">Semana</th></tr></thead><tbody><tr class=\"ds-section\"><th colspan=\"4\">Jabas</th></tr><tr><th class=\"ds-sticky ds-row\">Proyectado</th><td class=\"ds-num\">3 200</td><td class=\"ds-num\">3 400</td><td class=\"ds-num\">6 600</td></tr><tr><th class=\"ds-sticky ds-row\">Ejecutado</th><td class=\"ds-num\">3 250</td><td class=\"ds-num ds-below\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"vertical-align:-0.125em;margin-right:4px\"><path d=\"M12 5v14\"/><path d=\"m19 12-7 7-7-7\"/></svg><span class=\"ds-sr\">Bajo lo proyectado: </span>2 980</td><td class=\"ds-num ds-below\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"vertical-align:-0.125em;margin-right:4px\"><path d=\"M12 5v14\"/><path d=\"m19 12-7 7-7-7\"/></svg><span class=\"ds-sr\">Bajo lo proyectado: </span>6 230</td></tr></tbody></table>",
       "css": ".ds-matrix { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; border-collapse:collapse; font-size:14px; color: var(--foreground); background: var(--card); } .ds-matrix th, .ds-matrix td { padding:8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; } .ds-matrix thead th { font-weight:500; } .ds-sticky { position:sticky; left:0; background: var(--card); z-index:1; } .ds-row { font-weight:400; } .ds-matrix .ds-num { text-align:right; font-variant-numeric: tabular-nums; } .ds-section th { background: var(--accent); color: var(--accent-foreground); font-weight:600; } .ds-below { color: var(--destructive); font-weight:600; } .ds-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } .ds-matrix tbody tr:not(.ds-section):hover td { background: color-mix(in oklch, var(--muted) 50%, transparent); }"
+    },
+    {
+      "name": "Stage Indicator",
+      "kind": "custom",
+      "refersTo": "stage-current",
+      "description": "Fixed-stage flow: current stage is the dark ink pill, done stages a green check circle, future stages muted. On phones only the current stage shows its name.",
+      "html": "<ol class=\"ds-stages\" aria-label=\"Etapas de la jornada\"><li class=\"ds-stage ds-stage-done\"><span class=\"ds-stage-n\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><span>Iniciar jornada</span></li><li class=\"ds-stage ds-stage-current\" aria-current=\"step\"><span class=\"ds-stage-n\">2</span><span>Durante la jornada</span></li><li class=\"ds-stage ds-stage-todo\"><span class=\"ds-stage-n\">3</span><span>Cierre</span></li></ol>",
+      "css": ".ds-stages { display:flex; gap:8px; list-style:none; margin:0; padding:0; } .ds-stage { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; display:flex; align-items:center; gap:8px; height:44px; padding:0 16px 0 8px; border-radius:9999px; border:1px solid var(--border); background: var(--card); color: var(--foreground); font-size:14px; font-weight:600; } .ds-stage-n { display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:9999px; font-size:12px; font-variant-numeric: tabular-nums; background: var(--primary); color: var(--primary-foreground); } .ds-stage-current { background: var(--foreground); border-color: var(--foreground); color: var(--background); } .ds-stage-todo { color: var(--muted-foreground); } .ds-stage-todo .ds-stage-n { background: var(--secondary); color: var(--secondary-foreground); }"
+    },
+    {
+      "name": "Hours Status Banner",
+      "kind": "custom",
+      "refersTo": "status-banner-risk",
+      "description": "Signature: the live hours estimate at Display scale in the state color, with icon + title; explanation stays in ink. Tones: en plan (leaf-mist), horas extra (amber), riesgo de turno extra (coral wash).",
+      "html": "<section class=\"ds-banner ds-banner-risk\" role=\"status\" aria-label=\"Estado de la jornada\"><div class=\"ds-banner-fig\"><span class=\"ds-banner-label\">Terminas en aprox.</span><span class=\"ds-banner-num\">13.5 h</span><span class=\"ds-banner-label\">fin aprox. <strong>06:32</strong> · vigente 10.0 h</span></div><div class=\"ds-banner-body\"><h2 class=\"ds-banner-title\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 16h.01\"/><path d=\"M12 8v4\"/><path d=\"M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z\"/></svg>Riesgo de turno extra</h2><p>Al ritmo actual terminas en 13.5 h, más que la jornada y las horas extra (12 h). Para terminar en 12 h necesitas 39 personas más.</p></div></section><section class=\"ds-banner ds-banner-extra\" role=\"status\"><div class=\"ds-banner-fig\"><span class=\"ds-banner-label\">Terminas en aprox.</span><span class=\"ds-banner-num\">11.5 h</span></div><div class=\"ds-banner-body\"><h2 class=\"ds-banner-title\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg>No se termina en las horas del plan</h2><p>Necesitarás 1.5 h más que el plan, dentro de las horas extra permitidas.</p></div></section>",
+      "css": ".ds-banner { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; display:grid; grid-template-columns:auto 1fr; align-items:center; gap:16px 32px; padding:16px 20px; border-radius:16.8px; border:1px solid; color: var(--foreground); margin-bottom:16px; } .ds-banner-fig { display:flex; flex-direction:column; gap:4px; } .ds-banner-label { font-size:14px; font-weight:500; } .ds-banner-num { font-family: var(--font-baloo), 'Baloo 2', system-ui, sans-serif; font-size:60px; line-height:1; font-weight:700; font-variant-numeric: tabular-nums; } .ds-banner-body { display:flex; flex-direction:column; gap:12px; } .ds-banner-body p { margin:0; max-width:65ch; font-size:14px; } .ds-banner-title { font-family: var(--font-baloo), 'Baloo 2', system-ui, sans-serif; display:flex; align-items:center; gap:8px; margin:0; font-size:20px; font-weight:700; } .ds-banner-risk { background: color-mix(in oklch, var(--destructive) 10%, transparent); border-color: color-mix(in oklch, var(--destructive) 40%, transparent); } .ds-banner-risk .ds-banner-num, .ds-banner-risk .ds-banner-title { color: var(--destructive); } .ds-banner-extra { background: var(--warning); border-color: var(--chart-2); } .ds-banner-extra .ds-banner-num, .ds-banner-extra .ds-banner-title { color: var(--warning-foreground); } .ds-banner-plan { background: var(--success); border-color: color-mix(in oklch, var(--success-foreground) 25%, transparent); } .ds-banner-plan .ds-banner-num, .ds-banner-plan .ds-banner-title { color: var(--primary); }"
+    },
+    {
+      "name": "Toggle Chips",
+      "kind": "chip",
+      "refersTo": "chip-toggle-on",
+      "description": "Single-choice touch options (shadcn ToggleGroup): 44px round chips, dark ink when on.",
+      "html": "<div class=\"ds-toggles\" role=\"group\" aria-label=\"Tipo de registro\"><button class=\"ds-toggle\" aria-pressed=\"true\" data-state=\"on\">Avance de volumen</button><button class=\"ds-toggle\" aria-pressed=\"false\">Cambio de personal</button><button class=\"ds-toggle\" aria-pressed=\"false\">Cambio de volumen del día</button></div>",
+      "css": ".ds-toggles { display:flex; flex-wrap:wrap; gap:8px; } .ds-toggle { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; height:44px; padding:0 16px; border-radius:9999px; border:1px solid var(--input); background: transparent; color: var(--foreground); font-size:14px; font-weight:600; cursor:pointer; transition: all .15s; outline:none; } .ds-toggle:hover { background: var(--muted); } .ds-toggle:focus-visible { box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); border-color: var(--ring); } .ds-toggle[data-state=on], .ds-toggle[data-state=on]:hover { background: var(--foreground); border-color: var(--foreground); color: var(--background); }"
+    },
+    {
+      "name": "Touch Numeric Field and Button",
+      "kind": "input",
+      "refersTo": "input-touch",
+      "description": "Operator-screen field (48px, 18px tabular) with field-level coral error, and the 48px primary button.",
+      "html": "<form class=\"ds-touch\"><label class=\"ds-touch-field\"><span>Jabas procesadas (acum.)</span><input class=\"ds-touch-input\" inputmode=\"numeric\" placeholder=\"último 2,000\" aria-invalid=\"true\" aria-describedby=\"e1\"><span id=\"e1\" class=\"ds-touch-error\">Las procesadas no pueden superar las recibidas.</span></label><button type=\"button\" class=\"ds-touch-btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z\"/><path d=\"M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7\"/><path d=\"M7 3v4a1 1 0 0 0 1 1h7\"/></svg>Guardar registro</button></form>",
+      "css": ".ds-touch { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; display:flex; flex-direction:column; gap:20px; max-width:360px; } .ds-touch-field { display:flex; flex-direction:column; gap:8px; font-size:14px; font-weight:500; color: var(--foreground); } .ds-touch-input { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; height:48px; padding:4px 10px; border-radius:12px; border:1px solid var(--input); background: transparent; color: var(--foreground); font-size:18px; font-variant-numeric: tabular-nums; outline:none; transition: border-color .15s, box-shadow .15s; } .ds-touch-input::placeholder { color: var(--muted-foreground); } .ds-touch-input:focus-visible { box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); border-color: var(--ring); } .ds-touch-input[aria-invalid=true] { border-color: var(--destructive); box-shadow: 0 0 0 3px color-mix(in oklch, var(--destructive) 20%, transparent); } .ds-touch-error { color: var(--destructive); font-weight:400; } .ds-touch-btn { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; height:48px; padding:0 24px; border-radius:12px; border:1px solid transparent; background: var(--primary); color: var(--primary-foreground); font-size:16px; font-weight:500; cursor:pointer; transition: all .15s; outline:none; } .ds-touch-btn:hover { background: color-mix(in oklch, var(--primary) 80%, transparent); } .ds-touch-btn:focus-visible { box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); border-color: var(--ring); } .ds-touch-btn:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Inline Confirmation",
+      "kind": "custom",
+      "refersTo": "button-touch",
+      "description": "Irreversible step confirmed in place: amber notice restating the figures, green confirm plus outline back.",
+      "html": "<div class=\"ds-confirm\" role=\"alert\"><p>Vas a cerrar la jornada con 13,000 jabas en 13.5 h. Después ya no se puede registrar.</p><div class=\"ds-confirm-actions\"><button class=\"ds-confirm-btn ds-confirm-yes\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"/></svg>Confirmar cierre</button><button class=\"ds-confirm-btn ds-confirm-no\">Volver</button></div></div>",
+      "css": ".ds-confirm { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-radius:12px; border:1px solid var(--chart-2); background: var(--warning); color: var(--warning-foreground); } .ds-confirm p { margin:0; font-weight:500; font-size:16px; } .ds-confirm-actions { display:flex; gap:8px; flex-wrap:wrap; } .ds-confirm-btn { font-family: var(--font-nunito), Nunito, system-ui, sans-serif; display:inline-flex; align-items:center; gap:6px; height:48px; padding:0 16px; border-radius:12px; border:1px solid transparent; font-size:16px; font-weight:500; cursor:pointer; transition: all .15s; outline:none; } .ds-confirm-yes { background: var(--primary); color: var(--primary-foreground); } .ds-confirm-yes:hover { background: color-mix(in oklch, var(--primary) 80%, transparent); } .ds-confirm-no { background: var(--background); color: var(--foreground); border-color: var(--border); } .ds-confirm-no:hover { background: var(--muted); } .ds-confirm-btn:focus-visible { box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); border-color: var(--ring); } .ds-confirm-btn:active { transform: translateY(1px); }"
     }
   ],
   "narrative": {
@@ -448,7 +492,8 @@
       "Baloo 2 for headings and key figures, Nunito for everything else.",
       "Tabular, right-aligned numbers in every table and KPI.",
       "Dark ink pill marks the active view or filter.",
-      "Light and dark themes defined from one token file."
+      "Light and dark themes defined from one token file.",
+      "On hands-on operator screens, controls grow to touch size (44px chips, 48px fields and buttons) and the one answer figure goes to display scale."
     ],
     "rules": [
       {
@@ -467,13 +512,23 @@
         "section": "colors"
       },
       {
+        "name": "The Ink Body on Tint Rule",
+        "body": "On a tinted state surface (banner, notice, confirmation), the state color goes on the icon, the title, and the figure; the explanatory sentence stays in ink so it reads at full contrast.",
+        "section": "colors"
+      },
+      {
         "name": "The Tabular Figures Rule",
         "body": "Every numeric column and KPI uses `tabular-nums` and right alignment, so columns of jabas, workers, and hours line up digit for digit.",
         "section": "typography"
       },
       {
         "name": "The Heading Face Stays on Headings Rule",
-        "body": "Baloo 2 is for H1s, card titles, stat values, and the wordmark. Body, labels, buttons, and tables stay in Nunito.",
+        "body": "Baloo 2 is for H1s, card titles, stat values, display estimates, and the wordmark. Body, labels, buttons, and tables stay in Nunito.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Answer Figure Rule",
+        "body": "When a screen exists to answer one question (\"how many hours will this take?\"), the answer appears once at Display scale beside a short ink label and its context line; every other figure stays at Stat scale or below.",
         "section": "typography"
       },
       {
@@ -488,7 +543,11 @@
       "**Do** right-align numeric columns with `tabular-nums`.",
       "**Do** mark the active view or filter with the dark ink pill, and the current top-nav route with the secondary fill.",
       "**Do** show values changed from a plant default as an amber chip with \"(default X)\".",
-      "**Do** separate cards from the ground with the white fill and a 1px ink/10 ring."
+      "**Do** separate cards from the ground with the white fill and a 1px ink/10 ring.",
+      "**Do** use touch scale on operator screens: 44px toggle chips, 48px numeric fields and buttons.",
+      "**Do** keep the explanatory sentence in ink on any tinted state surface; color the icon, title, and figure.",
+      "**Do** fold secondary table columns into a muted line under the row label on phones, rather than scrolling an operator table sideways.",
+      "**Do** confirm irreversible steps inline with an amber notice that restates the figures, and attach errors to the field they concern."
     ],
     "donts": [
       "**Don't** use coral for anything that is not an alert, rejection, below-plan figure, or pending counter.",

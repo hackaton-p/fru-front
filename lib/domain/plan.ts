@@ -31,6 +31,10 @@ export const AREAS = [
 ] as const
 export type AreaCodigo = (typeof AREAS)[number]
 
+/** Por qué el jefe de turno ajustó las horas del día. */
+export const MOTIVOS_AJUSTE = ["CAMBIO_VOLUMEN", "PERSONAL_PRESENTE"] as const
+export type MotivoAjuste = (typeof MOTIVOS_AJUSTE)[number]
+
 export interface PlanDiaArea {
   area: AreaCodigo
   trabajadoresPlan: number
@@ -47,6 +51,9 @@ export interface PlanDia {
   margen: number
   estadoDia: EstadoDia
   areas: PlanDiaArea[]
+  /** Ajuste del jefe de turno durante la jornada; la meta nunca cambia. */
+  horasActualizadas?: number | null
+  motivoAjuste?: MotivoAjuste | null
 }
 
 export interface PlanTotales {

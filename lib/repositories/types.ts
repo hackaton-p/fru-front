@@ -1,10 +1,16 @@
 import type {
+  AjusteHorasInput,
   CalcularPlanInput,
+  CerrarJornadaInput,
   CursoSemana,
   EstadoPlan,
   Fruta,
+  IniciarJornadaInput,
   ImportarProyeccionInput,
   ImportarProyeccionResultado,
+  Jornada,
+  JornadaDelDia,
+  RegistroInput,
   Plan,
   PlanCalculado,
   Planta,
@@ -62,10 +68,26 @@ export interface CursoRepository {
   getSemana(query: SemanaQuery): Promise<CursoSemana | null>
 }
 
+export interface JornadasRepository {
+  /**
+   * Día que toca ejecutar en la planta: el primero sin cerrar del plan aprobado
+   * o en ejecución (o el último cerrado, si ya terminó la semana). null si no hay.
+   */
+  getActual(plantaId: number): Promise<JornadaDelDia | null>
+  /** Abre la jornada con lo que llegó e inicia por área. */
+  iniciar(input: IniciarJornadaInput): Promise<Jornada>
+  /** Avance, cambio de personal o cambio de volumen; recalcula el estimado. */
+  registrar(jornadaId: number, input: RegistroInput): Promise<Jornada>
+  /** Horas actualizadas del día, con motivo. La meta no cambia. */
+  ajustarHoras(jornadaId: number, input: AjusteHorasInput): Promise<Jornada>
+  cerrar(jornadaId: number, input: CerrarJornadaInput): Promise<Jornada>
+}
+
 export interface Repositories {
   plantas: PlantasRepository
   frutas: FrutasRepository
   proyecciones: ProyeccionesRepository
   planes: PlanesRepository
   curso: CursoRepository
+  jornadas: JornadasRepository
 }
