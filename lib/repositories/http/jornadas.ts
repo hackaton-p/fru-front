@@ -240,6 +240,12 @@ async function getJornada(id: number): Promise<Jornada> {
   return toJornada(detalle, await toPlan(raw, areaMap), areaMap)
 }
 
+/**
+ * DEMO: en false se puede iniciar y registrar cualquier día del plan (pasado o
+ * futuro) sin esperar a su fecha y hora. En producción va en true.
+ */
+const VALIDAR_FECHA_HORA = false
+
 /** Fecha de hoy en la planta (YYYY-MM-DD). */
 function hoyEnPlanta(): string {
   return aLocal(new Date()).slice(0, 10)
@@ -288,7 +294,7 @@ export const httpJornadas: JornadasRepository = {
     const rawDia = raw.days.find((d) => d.date === input.fecha)
     if (!rawDia?.id) throw new ApiError("El día no pertenece al plan.", 400)
     if (rawDia.workday) throw new ApiError("La jornada de este día ya se inició.", 409)
-    if (hoyEnPlanta() !== input.fecha) {
+    if (VALIDAR_FECHA_HORA && hoyEnPlanta() !== input.fecha) {
       throw new ApiError(
         `Esta jornada es del ${formatDiaLargo(input.fecha)}; solo se puede iniciar ese día.`,
         409,
@@ -311,13 +317,14 @@ export const httpJornadas: JornadasRepository = {
       startingWorkers: reparto[i].trabajadores,
     }))
 
-    // Arranca a la hora programada; si todavía no llega, el back toma la hora actual.
+    // Arranca a la hora programada; si todavía no llega, el back toma la hora actual
+    // (en la demo siempre a la programada).
     const programada = aUtc(`${input.fecha}T${raw.parametersSnapshot.startTime.slice(0, 5)}`)
     const workday = await apiRequest<RawWorkday>("/workdays", {
       method: "POST",
       body: {
         planDayId: rawDia.id,
-        startedAt: Date.parse(programada) <= Date.now() ? programada : undefined,
+        startedAt: !VALIDAR_FECHA_HORA || Date.parse(programada) <= Date.now() ? programada : undefined,
         attendance,
       },
     })
@@ -341,7 +348,7 @@ export const httpJornadas: JornadasRepository = {
       throw new ApiError(`La hora no puede ser anterior a las ${ultimo.slice(11, 16)}.`, 400)
     }
     const recordedAt = aUtc(hora)
-    if (Date.parse(recordedAt) > Date.now()) {
+    if (VALIDAR_FECHA_HORA && Date.parse(recordedAt) > Date.now()) {
       throw new ApiError("La hora no puede ser posterior a la hora actual.", 400)
     }
 
