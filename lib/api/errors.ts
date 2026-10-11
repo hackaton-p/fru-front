@@ -23,7 +23,12 @@ export function toUserMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 0) return "No se pudo conectar con el servidor. Intenta de nuevo."
     if (error.isUnauthorized) return "No tienes permiso para realizar esta acción."
-    if (error.isConflict) return error.message || "La acción no es válida para el estado actual del plan."
+    if (error.isConflict) {
+      if (error.message === "Import both harvest and commercial projections before planning") {
+        return "Sube la proyección de cosecha y el programa comercial para la misma planta, fruta y semana antes de planificar."
+      }
+      return error.message || "La acción no es válida para el estado actual del plan."
+    }
     return error.message
   }
   return "Ocurrió un error inesperado."
