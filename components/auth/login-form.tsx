@@ -46,12 +46,6 @@ export function LoginForm({ mockMode = false }: { mockMode?: boolean }) {
         </p>
       ) : null}
 
-      {mockMode ? (
-        <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-          Demo: contraseña <span className="font-mono">password123</span>. Planificador: <span className="font-mono">planificador@piura.com</span>; Subgerente: <span className="font-mono">subgerente@example.com</span>; Jefe de turno: <span className="font-mono">jefe.turno@piura.com</span>.
-        </p>
-      ) : null}
-
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Correo</Label>
         <Input
