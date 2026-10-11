@@ -5,6 +5,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { addDays, isoWeek, mondayOfIsoWeek } from "@/lib/dates"
 import { can } from "@/lib/auth/permissions"
 import { parametrosDe } from "@/lib/domain"
 import { parametrosSchema } from "@/lib/parametros"
@@ -39,9 +40,18 @@ async function PlanSemanal({ searchParams }: Pick<PageProps<"/planificador">, "s
   if (mode !== "crear" && (!Number.isSafeInteger(planId) || planId <= 0)) notFound()
   const selectedPlan = mode !== "crear" ? await repos.planes.getById(planId) : undefined
   if (selectedPlan && user.plantaId !== null && selectedPlan.plantaId !== user.plantaId) notFound()
-  const query = selectedPlan
+  let query = selectedPlan
     ? { plantaId: selectedPlan.plantaId, frutaId: selectedPlan.frutaId, anio: selectedPlan.anio, semana: selectedPlan.semana }
     : resolverSemanaQuery(params, user, new Date())
+  if (mode === "crear" && !params.semana && !params.anio) {
+    // Sin semana explícita: salta a la primera semana que aún no tiene plan.
+    const existentes = await repos.planes.listar({ plantaId: query.plantaId })
+    let { year, week } = { year: query.anio, week: query.semana }
+    while (existentes.some(p => p.frutaId === query.frutaId && p.anio === year && p.semana === week)) {
+      ;({ year, week } = isoWeek(addDays(mondayOfIsoWeek(year, week), 7)))
+    }
+    query = { ...query, anio: year, semana: week }
+  }
   const back = <Button asChild variant="outline" className="self-start"><Link href="/planificador">← Volver a planificaciones</Link></Button>
   if (mode === "crear") {
     if (!canGestionar) return <>{back}<Alert><AlertTitle>No tienes permiso para crear planes</AlertTitle></Alert></>
