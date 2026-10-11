@@ -55,7 +55,7 @@ export interface PlanSemanalData {
     /** Defaults de la planta, o los valores finales del plan si ya existe. */
     parametros: ParametrosPlanta
     resultado: PlanCalculado
-  }
+  } | null
 }
 
 export async function getPlanSemanalData(query: SemanaQuery): Promise<PlanSemanalData> {
@@ -73,7 +73,9 @@ export async function getPlanSemanalData(query: SemanaQuery): Promise<PlanSemana
   const defaults = parametrosDe(planta)
   const simulacionInicial = plan
     ? { escenario: plan.escenarioCosecha, parametros: plan.parametrosUsados, resultado: plan }
-    : {
+    : cosecha.length === 0 || comercial.length === 0
+      ? null
+      : {
         escenario: "PROYECTADA" as const,
         parametros: defaults,
         resultado: await repos.planes.simular({

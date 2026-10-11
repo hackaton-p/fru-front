@@ -40,7 +40,7 @@ interface SimulacionSectionProps {
   planta: Planta
   defaults: ParametrosPlanta
   plan: Plan | null
-  initial: PlanSemanalData["simulacionInicial"]
+  initial: NonNullable<PlanSemanalData["simulacionInicial"]>
   canGestionar: boolean
 }
 

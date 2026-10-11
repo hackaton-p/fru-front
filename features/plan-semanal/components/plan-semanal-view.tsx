@@ -1,4 +1,4 @@
-import { CircleX } from "lucide-react"
+import { CircleX, FileSpreadsheet } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { can } from "@/lib/auth/permissions"
 import { parametrosDe, type Usuario } from "@/lib/domain"
@@ -20,6 +20,10 @@ export function PlanSemanalView({ data, user }: PlanSemanalViewProps) {
   const { query, planta, fruta, cosecha, comercial, plan, simulacionInicial } = data
   const canGestionar = can(user.rol, "plan:gestionar")
   const defaults = parametrosDe(planta)
+  const missingProjections = [
+    cosecha.length === 0 ? "la proyección de cosecha" : null,
+    comercial.length === 0 ? "el programa comercial" : null,
+  ].filter(Boolean).join(" y ")
 
   return (
     <>
@@ -47,24 +51,45 @@ export function PlanSemanalView({ data, user }: PlanSemanalViewProps) {
         </Alert>
       ) : null}
 
-      <AlertaPlanificacion
-        cosechaJabas={cosecha.reduce((s, c) => s + c.jabas, 0)}
-        comercialJabas={comercial.reduce((s, c) => s + c.jabas, 0)}
-      />
+      {missingProjections ? (
+        <Alert>
+          <FileSpreadsheet aria-hidden />
+          <AlertTitle>Faltan proyecciones para planificar</AlertTitle>
+          <AlertDescription>
+            <p>
+              Falta cargar {missingProjections} para {planta.nombre}, {fruta.nombre}, semana{" "}
+              {query.semana} de {query.anio}.
+            </p>
+            <p>
+              {canGestionar
+                ? "Usa los botones Importar Excel de las tarjetas de abajo para subir los archivos pendientes."
+                : "Solicita al planificador que suba los archivos pendientes."}{" "}
+              La simulación estará disponible cuando estén cargadas ambas proyecciones.
+            </p>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <AlertaPlanificacion
+          cosechaJabas={cosecha.reduce((s, c) => s + c.jabas, 0)}
+          comercialJabas={comercial.reduce((s, c) => s + c.jabas, 0)}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} />
         <ProgramaComercialCard comercial={comercial} query={query} canImport={canGestionar} />
       </div>
 
-      <SimulacionSection
-        query={query}
-        planta={planta}
-        defaults={defaults}
-        plan={plan}
-        initial={simulacionInicial}
-        canGestionar={canGestionar}
-      />
+      {simulacionInicial && !missingProjections ? (
+        <SimulacionSection
+          query={query}
+          planta={planta}
+          defaults={defaults}
+          plan={plan}
+          initial={simulacionInicial}
+          canGestionar={canGestionar}
+        />
+      ) : null}
       <PlanOficialSection plan={plan} defaults={defaults} />
     </>
   )
