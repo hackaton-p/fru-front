@@ -2,6 +2,7 @@ import { z } from "zod"
 
 const measurement = z.number().nonnegative().nullable()
 export const dashboardSchema = z.object({
+  year: z.number().int().min(2000).max(2100),
   week: z.number().int().positive(),
   period: z.string(),
   source: z.string(),
