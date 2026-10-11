@@ -1,0 +1,68 @@
+import { ClipboardList } from "lucide-react"
+import { ParametrosResumen, describirCambios } from "@/components/shared/parametros-resumen"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import type { ParametrosPlanta, Plan } from "@/lib/domain"
+import { ESCENARIO_LABEL } from "../lib/escenarios"
+import { LocalDateTime } from "./local-date-time"
+import { PlanAreasTable } from "./plan-dias-tables"
+import { PlanKpis } from "./plan-kpis"
+
+interface PlanOficialSectionProps {
+  plan: Plan | null
+  defaults: ParametrosPlanta
+}
+
+/** Paso 2 · Plan oficial guardado, con el personal por área y los valores finales. */
+export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Paso 2 · Plan oficial</CardTitle>
+        <CardDescription>
+          {plan ? (
+            <>
+              Guardado <LocalDateTime iso={plan.updatedAt} /> · cosecha{" "}
+              {ESCENARIO_LABEL[plan.escenarioCosecha].toLowerCase()} ·{" "}
+              {describirCambios(plan.parametrosUsados, defaults)}
+            </>
+          ) : (
+            "Se crea al aplicar una simulación."
+          )}
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="flex flex-col gap-4">
+        {plan ? (
+          <>
+            <PlanKpis totales={plan.totales} />
+            <ParametrosResumen valores={plan.parametrosUsados} defaults={defaults} />
+            <PlanAreasTable dias={plan.dias} />
+            <p className="text-sm text-muted-foreground">
+              El total de trabajadores se reparte por área con la proporción de la semana 41.
+            </p>
+          </>
+        ) : (
+          <Empty className="border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ClipboardList />
+              </EmptyMedia>
+              <EmptyTitle>Aún no hay plan oficial</EmptyTitle>
+              <EmptyDescription>
+                Simula en el paso 1 y, cuando las cifras te convenzan, pulsa «Aplicar como plan
+                oficial». Recién ahí se guarda y se puede enviar a aprobación.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
