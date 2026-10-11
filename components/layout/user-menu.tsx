@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
+import Link from "next/link"
 import { logoutAction } from "@/lib/auth/actions"
 import type { Usuario } from "@/lib/domain"
 import { ROL_LABEL } from "./nav-items"
@@ -35,6 +36,8 @@ export function UserMenu({ user }: { user: Usuario }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>{ROL_LABEL[user.rol]}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild><Link href="/perfil"><UserRound data-icon="inline-start" aria-hidden /> Perfil de usuario</Link></DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => startTransition(() => logoutAction())}>
           <LogOut data-icon="inline-start" aria-hidden />

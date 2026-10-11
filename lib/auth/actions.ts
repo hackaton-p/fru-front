@@ -7,7 +7,7 @@ import type { ActionResult } from "@/lib/action-result"
 import { HOME_POR_ROL } from "@/components/layout/nav-items"
 import { serverEnv } from "@/lib/config/env"
 import type { Rol } from "@/lib/domain"
-import { DEMO_ROL_COOKIE, isRol } from "./session"
+import { ACTIVE_PLANT_COOKIE, DEMO_ROL_COOKIE, isRol } from "./session"
 
 const credencialesSchema = z.object({
   email: z.string().trim().min(1).email(),
@@ -131,5 +131,6 @@ export async function logoutAction() {
   }
   store.delete(serverEnv().AUTH_COOKIE_NAME)
   store.delete(DEMO_ROL_COOKIE)
+  store.delete(ACTIVE_PLANT_COOKIE)
   redirect("/login")
 }

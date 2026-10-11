@@ -9,6 +9,7 @@ import type { Rol, Usuario } from "@/lib/domain"
 
 /** Cookie de sesión local cuando el front corre con datos mock. */
 export const DEMO_ROL_COOKIE = "demo_rol"
+export const ACTIVE_PLANT_COOKIE = "active_plant"
 
 /** Un usuario de ejemplo por rol, mientras API_MOCK esté activo. */
 const USUARIOS_DEMO: Record<Rol, Usuario> = {
@@ -29,6 +30,7 @@ interface ActorResponse {
   email: string
   role: Rol
   plantId: number | null
+  plantIds?: number[]
 }
 
 /** Memoizado por request: varias partes del árbol (header, página) piden el usuario actual. */
@@ -37,7 +39,7 @@ const getUsuarioReal = cache(async (): Promise<Usuario> => {
   if (!token) redirect("/login")
   try {
     const actor = await apiRequest<ActorResponse>("/users/me")
-    return { id: actor.id, nombre: actor.name, rol: actor.role, plantaId: actor.plantId }
+    return { id: actor.id, nombre: actor.name, rol: actor.role, plantaId: actor.plantId, plantaIds: actor.plantIds }
   } catch (error) {
     if (error instanceof ApiError && error.isUnauthorized) redirect("/login")
     throw error
@@ -49,10 +51,18 @@ const getUsuarioReal = cache(async (): Promise<Usuario> => {
  * que el usuario haya pasado por el formulario de login.
  */
 export async function getCurrentUser(): Promise<Usuario> {
+  let user: Usuario
   if (serverEnv().API_MOCK) {
     const rol = (await cookies()).get(DEMO_ROL_COOKIE)?.value
     if (!isRol(rol)) redirect("/login")
-    return USUARIOS_DEMO[rol]
+    user = USUARIOS_DEMO[rol]
+  } else {
+    user = await getUsuarioReal()
   }
-  return getUsuarioReal()
+  const selectedPlant = Number((await cookies()).get(ACTIVE_PLANT_COOKIE)?.value)
+  const allowedPlantIds = user.plantaIds ?? (user.plantaId === null ? undefined : [user.plantaId])
+  if (Number.isInteger(selectedPlant) && selectedPlant > 0 && (allowedPlantIds === undefined || allowedPlantIds.includes(selectedPlant))) {
+    return { ...user, plantaId: selectedPlant }
+  }
+  return user
 }

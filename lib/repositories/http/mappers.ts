@@ -76,9 +76,12 @@ export interface RawPlanDay {
   targetCrates: string
   workers: number
   hours: string
+  adjustedHours?: string | null
+  adjustmentReason?: "CAMBIO_VOLUMEN" | "PERSONAL_PRESENTE" | null
   margin: number | null
   dayStatus: string
   areas: RawPlanDayArea[]
+  workday?: { id: number; closedAt: string | null } | null
 }
 
 export interface RawTotals {
@@ -202,6 +205,8 @@ function toPlanDia(d: RawPlanDay, areaMap: Record<number, AreaCodigo>): PlanDia 
     jabasMeta: Number(d.targetCrates),
     trabajadores: d.workers,
     horas: Number(d.hours),
+    horasActualizadas: d.adjustedHours == null ? null : Number(d.adjustedHours),
+    motivoAjuste: d.adjustmentReason ?? null,
     margen: d.margin ?? 0,
     estadoDia: d.dayStatus as EstadoDia,
     areas: d.areas.map((a) => toPlanDiaArea(a, areaMap)),
