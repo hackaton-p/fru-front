@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge"
-import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { Check } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface PlanPasosProps {
   configuracionLista: boolean
@@ -38,20 +38,26 @@ export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, pl
   ]
 
   return (
-    <ItemGroup className="grid gap-2 md:grid-cols-4" aria-label="Flujo para crear el plan semanal">
-      {pasos.map((paso, i) => (
-        <Item key={paso.titulo} variant="outline" size="sm" className="bg-card">
-          <ItemMedia>
-            <Badge variant={paso.listo ? "default" : "secondary"} className="tabular-nums">
-              {i + 1}
-            </Badge>
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>{paso.titulo}</ItemTitle>
-            <p className="text-xs text-muted-foreground">{paso.detalle}</p>
-          </ItemContent>
-        </Item>
-      ))}
-    </ItemGroup>
+    <nav aria-label="Flujo para crear el plan semanal" className="sticky top-14 z-30 -mx-2 rounded-xl border bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-backdrop-filter:bg-background/80">
+      <ol className="grid grid-cols-4">
+        {pasos.map((paso, i) => (
+          <li key={paso.titulo} className="min-w-0" aria-current={!paso.listo && pasos.slice(0, i).every((p) => p.listo) ? "step" : undefined}>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                paso.listo ? "bg-primary text-primary-foreground" : "border bg-muted text-muted-foreground",
+              )}>
+                {paso.listo ? <Check className="size-4" aria-label="Completado" /> : i + 1}
+              </span>
+              {i < pasos.length - 1 && (
+                <span aria-hidden className={cn("h-0.5 flex-1 rounded-full", paso.listo ? "bg-primary" : "bg-border")} />
+              )}
+            </div>
+            <p className="mt-2 pr-2 text-sm font-medium leading-tight">{paso.titulo}</p>
+            <p className="mt-0.5 hidden pr-3 text-xs text-muted-foreground lg:block">{paso.detalle}</p>
+          </li>
+        ))}
+      </ol>
+    </nav>
   )
 }
