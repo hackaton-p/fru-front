@@ -1,12 +1,12 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { Grape } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCurrentUser } from "@/lib/auth/session"
 import { MainNav } from "./main-nav"
 import { ModeToggle } from "./mode-toggle"
 import { navItemsFor } from "./nav-items"
 import { UserMenu } from "./user-menu"
+import { BrandLogo } from "./brand-logo"
 
 /** Partes del header que dependen de la sesión (cookies → se resuelven por request). */
 async function SessionNav() {
@@ -23,10 +23,9 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-heading text-lg font-bold">
-          <Grape className="size-5 text-primary" aria-hidden />
-          purafruit
-          <span className="sr-only">· Plan de Packing</span>
+        <Link href="/" className="flex shrink-0 items-center">
+          <BrandLogo className="h-10 w-auto text-black dark:text-white sm:h-11" />
+          <span className="sr-only">Pura Fruit · Plan de Packing</span>
         </Link>
         <Suspense fallback={<Skeleton className="h-8 flex-1" />}>
           <SessionNav />
