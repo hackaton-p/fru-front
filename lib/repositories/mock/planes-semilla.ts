@@ -102,6 +102,7 @@ export function planesSemilla(hoy = new Date()): Plan[] {
       id: s.id,
       plantaId: s.plantaId,
       frutaId: 1,
+      anio: year,
       semana: s.semana,
       estado: s.estado,
       updatedAt: fechaAprobacion ?? fechaEnvio,

@@ -158,6 +158,7 @@ export const mockRepositories: Repositories = {
         id: actual?.id ?? store.__mockPlanId,
         plantaId: input.plantaId,
         frutaId: input.frutaId,
+        anio: input.anio,
         semana: input.semana,
         estado: "BORRADOR",
         updatedAt: new Date().toISOString(),

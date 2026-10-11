@@ -19,6 +19,7 @@ function planCon(parcial: Partial<Plan>): Plan {
     id: 1,
     plantaId: 1,
     frutaId: 1,
+    anio: 2026,
     semana: 42,
     estado: "BORRADOR",
     updatedAt: "2026-10-10T12:00:00Z",

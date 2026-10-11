@@ -82,6 +82,7 @@ export interface Plan extends PlanCalculado {
   id: number
   plantaId: number
   frutaId: number
+  anio: number
   semana: number
   estado: EstadoPlan
   updatedAt: string

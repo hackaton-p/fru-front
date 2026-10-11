@@ -101,6 +101,7 @@ export async function getCursoData(
   const query: SemanaQuery = {
     plantaId: planta.id,
     frutaId: enEjecucion?.frutaId ?? FRUTA_POR_DEFECTO,
+    anio: enEjecucion?.anio ?? isoWeek(hoy).year,
     semana: sp.semana ?? enEjecucion?.semana ?? isoWeek(hoy).week,
   }
   const curso = await getRepositories().curso.getSemana(query)

@@ -15,7 +15,8 @@ export interface RequestOptions {
 }
 
 function buildUrl(path: string, query?: object) {
-  const url = new URL(path.replace(/^\//, ""), serverEnv().API_URL.replace(/\/?$/, "/"))
+  // El back monta todas las rutas bajo /api (ver setGlobalPrefix en application.ts).
+  const url = new URL(`api/${path.replace(/^\//, "")}`, serverEnv().API_URL.replace(/\/?$/, "/"))
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null) url.searchParams.set(key, String(value))
   }

@@ -21,6 +21,7 @@ const MAX_EXCEL_BYTES = 10 * 1024 * 1024
 const semanaSchema = z.object({
   plantaId: z.number().int().positive(),
   frutaId: z.number().int().positive(),
+  anio: z.number().int().min(2000).max(2100),
   semana: z.number().int().min(1).max(53),
 })
 
@@ -92,6 +93,7 @@ export async function importarProyeccionAction(
       tipo: formData.get("tipo"),
       plantaId: Number(formData.get("plantaId")),
       frutaId: Number(formData.get("frutaId")),
+      anio: Number(formData.get("anio")),
       semana: Number(formData.get("semana")),
       archivo: formData.get("archivo"),
     })

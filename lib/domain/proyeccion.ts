@@ -1,9 +1,10 @@
 export type TipoProyeccion = "COSECHA" | "COMERCIAL"
 
-/** Filtro común de proyecciones: planta, fruta y semana. */
+/** Filtro común de proyecciones: planta, fruta, año y semana. */
 export interface SemanaQuery {
   plantaId: number
   frutaId: number
+  anio: number
   semana: number
 }
 
