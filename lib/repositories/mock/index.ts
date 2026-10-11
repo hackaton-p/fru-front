@@ -1,6 +1,7 @@
 import "server-only"
 import { ApiError } from "@/lib/api/errors"
-import type { CalcularPlanInput, Plan, PlanCalculado, SemanaQuery } from "@/lib/domain"
+import type { CalcularPlanInput, Plan, PlanCalculado, Planta, SemanaQuery } from "@/lib/domain"
+import { parametrosSchema } from "@/lib/parametros"
 import type { Repositories } from "../types"
 import { cursoMock } from "./curso-data"
 import { comercialMock, cosechaMock, FRUTAS, PLANTAS } from "./data"
@@ -20,10 +21,13 @@ const key = (q: SemanaQuery) => `${q.plantaId}-${q.frutaId}-${q.semana}`
 
 // Sobrevive al hot reload en desarrollo. Arranca con los planes de ejemplo.
 const store = globalThis as unknown as {
+  __mockPlantas?: Map<number, Planta>
   __mockPlanes?: Map<string, Plan>
   __mockPlanId?: number
   __mockJornadas?: JornadasStore
 }
+// Copia editable desde "Configuración de planta"; los planes semilla usan los valores originales.
+const plantas = (store.__mockPlantas ??= new Map(PLANTAS.map((p) => [p.id, { ...p }])))
 const planes = (store.__mockPlanes ??= new Map(planesSemilla().map((p) => [key(p), p])))
 store.__mockPlanId ??= ULTIMO_ID_SEMILLA
 const jornadas = crearJornadasMock(
@@ -54,7 +58,7 @@ function decidir(id: number, cambios: Pick<Plan, "estado" | "comentarioAprobacio
 }
 
 function plantaOrThrow(id: number) {
-  const planta = PLANTAS.find((p) => p.id === id)
+  const planta = plantas.get(id)
   if (!planta) throw new ApiError("Planta no encontrada", 404)
   return planta
 }
@@ -83,11 +87,20 @@ export const mockRepositories: Repositories = {
   plantas: {
     async listar() {
       await delay()
-      return PLANTAS
+      return [...plantas.values()]
     },
     async getById(id) {
       await delay()
       return plantaOrThrow(id)
+    },
+    async actualizar(id, parametros) {
+      await delay()
+      const planta = plantaOrThrow(id)
+      const parsed = parametrosSchema.safeParse(parametros)
+      if (!parsed.success) throw new ApiError("Hay valores fuera de rango.", 400)
+      const actualizada: Planta = { ...planta, ...parsed.data, updatedAt: new Date().toISOString() }
+      plantas.set(id, actualizada)
+      return actualizada
     },
   },
   frutas: {
