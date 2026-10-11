@@ -52,5 +52,13 @@ export function buildDashboard(plant: DashboardPlant) {
     { id: "yield", title: "Rendimiento por persona-hora", description: "Jabas procesadas ÷ (personal × horas); la línea punteada es el default de la planta", series: [series("Jabas / persona-hora", values(d => d.executedCrates === null || !d.executedStaff || !d.hours ? null : round(d.executedCrates / (d.executedStaff * d.hours))))], max: 8, reference: { value: plant.defaultYield, label: `Default ${plant.defaultYield}` }, summary: `Promedio ${yieldRate.toFixed(1)} jabas por persona-hora.` },
     { id: "discard", title: "% de descarte", description: "Fruta descartada sobre la procesada", series: [series("Descarte", values(d => d.discardPercent))], max: 12, unit: "%", summary: `Promedio ${discard.toFixed(1)}% de descarte.` },
   ]
-  return { metrics: empty ? metrics.map(m => ({ ...m, value: "—", note: "Sin jornadas cerradas", tone: "warning" as const })) : metrics, insights: empty ? [{ title: "Semana en curso", text: "Los indicadores estarán disponibles cuando se cierre la primera jornada." }] : insights, charts: empty ? charts.map(c => ({ ...c, summary: "Sin jornadas cerradas." })) : charts }
+  return {
+    metrics: empty ? metrics.map(m => ({ ...m, note: "Sin jornadas cerradas", tone: "warning" as const })) : metrics,
+    insights: empty ? [
+      { title: "Sin jornadas cerradas", text: "Los indicadores se muestran en cero hasta cerrar la primera jornada." },
+      { title: "Personal pendiente", text: "Aún no hay datos cerrados de personal para esta semana." },
+      { title: "Producción pendiente", text: "Aún no hay datos cerrados de producción para esta semana." },
+    ] : insights,
+    charts: charts.map(c => ({ ...c, series: c.series.map(s => ({ ...s, values: s.values.map(v => v ?? 0) })) })),
+  }
 }
