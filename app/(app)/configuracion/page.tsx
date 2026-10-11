@@ -10,18 +10,21 @@ export const metadata: Metadata = {
   title: "Configuración de planta",
 }
 
-async function Configuracion() {
+async function Configuracion({ searchParams }: Pick<PageProps<"/configuracion">, "searchParams">) {
   const user = await getCurrentUser()
   // El día de ejemplo sale de la próxima semana: depende de la fecha de hoy.
   await connection()
   const data = await getConfiguracionData(user, new Date())
+  const params = await searchParams
+  const requestedPlant = Number(params.planta)
+  if (data.plantas.some(p => p.id === requestedPlant) && (user.plantaId === null || user.plantaId === requestedPlant)) data.plantaInicial = requestedPlant
   return <ConfiguracionView data={data} />
 }
 
-export default function ConfiguracionPage() {
+export default function ConfiguracionPage({ searchParams }: PageProps<"/configuracion">) {
   return (
     <Suspense fallback={<ConfiguracionSkeleton />}>
-      <Configuracion />
+      <Configuracion searchParams={searchParams} />
     </Suspense>
   )
 }

@@ -18,10 +18,10 @@ interface PlanHeaderProps {
   canGestionar: boolean
 }
 
-function hrefSemana(anio: number, semana: number, offset: -1 | 1) {
+function hrefSemana(anio: number, semana: number, plantaId: number, frutaId: number, offset: -1 | 1) {
   const lunes = mondayOfIsoWeek(anio, semana)
   const objetivo = isoWeek(addDays(lunes, offset * 7))
-  return `/planificador?anio=${objetivo.year}&semana=${objetivo.week}`
+  return `/planificador?vista=crear&planta=${plantaId}&fruta=${frutaId}&anio=${objetivo.year}&semana=${objetivo.week}`
 }
 
 function rangoFechas(cosecha: ProyeccionCosechaDia[]) {
@@ -55,18 +55,18 @@ export function PlanHeader({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1" aria-label="Cambiar semana">
+        {canGestionar && <div className="flex items-center gap-1" aria-label="Cambiar semana">
           <Button asChild variant="outline" size="icon" aria-label="Semana anterior">
-            <Link href={hrefSemana(anio, semana, -1)}>
+            <Link href={hrefSemana(anio, semana, planta.id, fruta.id, -1)}>
               <ChevronLeft aria-hidden />
             </Link>
           </Button>
           <Button asChild variant="outline" size="icon" aria-label="Semana siguiente">
-            <Link href={hrefSemana(anio, semana, 1)}>
+            <Link href={hrefSemana(anio, semana, planta.id, fruta.id, 1)}>
               <ChevronRight aria-hidden />
             </Link>
           </Button>
-        </div>
+        </div>}
         <EstadoPlanBadge estado={estado} />
         {canGestionar ? (
           <EnviarAprobacionButton planId={planId} disabled={estado !== "BORRADOR"} />

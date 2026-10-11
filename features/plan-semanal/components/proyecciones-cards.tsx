@@ -11,6 +11,7 @@ import {
 import type { ProyeccionCosechaDia, ProyeccionComercialCliente, SemanaQuery } from "@/lib/domain"
 import { formatDia, formatInt } from "@/lib/format"
 import { ImportExcelDialog } from "./import-excel-dialog"
+import { CommercialFormDialog, HarvestForm } from "./projection-forms"
 
 interface ProyeccionCardProps {
   title: string
@@ -53,7 +54,7 @@ export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCard
 
   return (
     <ProyeccionCard
-      title="Proyección de cosecha"
+      title="3. Proyección de cosecha"
       description="Registrada por Área de cosecha · No editable una vez registrada"
       action={
         canImport
@@ -63,13 +64,13 @@ export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCard
           : undefined
       }
     >
-      <DataTable
+      {canImport && cosecha.length === 0 ? <HarvestForm key={`${query.plantaId}-${query.frutaId}-${query.anio}-${query.semana}`} query={query} /> : <DataTable
         caption="Proyección de cosecha por día"
         columns={columns}
         rows={cosecha}
         getRowKey={(c) => c.fecha}
         emptyMessage="Aún no se registra la proyección de cosecha de esta semana."
-      />
+      />}
     </ProyeccionCard>
   )
 }
@@ -95,13 +96,13 @@ export function ProgramaComercialCard({ comercial, query, canImport }: Comercial
 
   return (
     <ProyeccionCard
-      title="Programa comercial"
+      title="2. Programa comercial"
       description="Registrado por Área comercial · No editable una vez registrado"
       action={
         canImport
           ? comercial.length > 0
             ? <Badge variant="secondary">Registrado</Badge>
-            : <ImportExcelDialog tipo="COMERCIAL" query={query} />
+            : <div className="flex flex-wrap gap-2"><ImportExcelDialog tipo="COMERCIAL" query={query} /><CommercialFormDialog query={query} /></div>
           : undefined
       }
     >

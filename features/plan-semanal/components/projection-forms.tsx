@@ -1,0 +1,79 @@
+"use client"
+
+import { useState, useTransition } from "react"
+import { Plus, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
+import { addDays, mondayOfIsoWeek, toIsoDate } from "@/lib/dates"
+import { formatDia } from "@/lib/format"
+import type { SemanaQuery } from "@/lib/domain"
+import { guardarProyeccionAction } from "../actions"
+import { distributeHarvest } from "../lib/harvest-distribution"
+
+export function HarvestForm({ query }: { query: SemanaQuery }) {
+  const router = useRouter()
+  const [total, setTotal] = useState("")
+  const [values, setValues] = useState<string[]>(Array(7).fill(""))
+  const [automatic, setAutomatic] = useState(true)
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const dates = Array.from({ length: 7 }, (_, i) => toIsoDate(addDays(mondayOfIsoWeek(query.anio, query.semana), i)))
+  const clear = () => { setTotal(""); setValues(Array(7).fill("")); setAutomatic(true); setError(null) }
+  const changeTotal = (value: string) => {
+    setTotal(value)
+    if (automatic || values.every(v => v === "")) {
+      setAutomatic(true)
+      setValues(value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0
+        ? distributeHarvest(Number(value)).map(String) : Array(7).fill(""))
+    }
+  }
+  const save = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    const sum = values.reduce((s, v) => s + Number(v || 0), 0)
+    if (Math.round(sum * 100) !== Math.round(Number(total) * 100)) { setError("El total debe coincidir con la suma de los días. Ajusta los días o limpia el formulario para distribuir de nuevo."); return }
+    startTransition(async () => {
+      const result = await guardarProyeccionAction({ ...query, tipo: "COSECHA", registros: dates.map((fecha, i) => ({ fecha, jabas: Number(values[i] || 0) })) })
+      if (result.ok) { toast.success("Proyección de cosecha guardada"); router.refresh() }
+      else setError(result.error)
+    })
+  }
+  return <form onSubmit={save} className="space-y-4">
+    <div className="space-y-2"><Label htmlFor="harvest-total">Total semanal (jabas)</Label><Input id="harvest-total" type="number" min="0" max="7000000000" step="0.01" required value={total} onChange={e => changeTotal(e.target.value)} disabled={pending} /><p className="text-sm text-muted-foreground">Ingresa el total para repartirlo entre los siete días. Puedes ajustar cada día; el total se actualizará con tus cambios.</p></div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{dates.map((date, i) => <div key={date} className="space-y-2"><Label htmlFor={`harvest-${date}`}>{formatDia(date)}</Label><Input id={`harvest-${date}`} type="number" min="0" max="1000000000" step="0.01" value={values[i]} disabled={pending} placeholder="0" onChange={e => {
+      const next = [...values]; next[i] = e.target.value; setValues(next); setAutomatic(false)
+      setTotal(next.some(v => v !== "") ? String(Math.round(next.reduce((s, v) => s + Number(v || 0), 0) * 100) / 100) : "")
+    }} /></div>)}</div>
+    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+    <div className="flex gap-2"><Button type="submit" disabled={pending || total === ""}>{pending ? "Guardando…" : "Guardar proyección"}</Button><Button type="button" variant="outline" onClick={clear} disabled={pending}>Limpiar</Button></div>
+  </form>
+}
+
+export function CommercialFormDialog({ query }: { query: SemanaQuery }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [rows, setRows] = useState([{ cliente: "", pais: "", jabas: "" }])
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const update = (i: number, key: "cliente" | "pais" | "jabas", value: string) => setRows(rows.map((row, index) => index === i ? { ...row, [key]: value } : row))
+  return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button variant="outline"><Plus aria-hidden />Agregar registros</Button></DialogTrigger><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Agregar programa comercial</DialogTitle><DialogDescription>Semana {query.semana} de {query.anio}. Agrega clientes, países y jabas. Los registros no podrán editarse después de guardar.</DialogDescription></DialogHeader><form className="space-y-4" onSubmit={e => {
+    e.preventDefault(); setError(null)
+    startTransition(async () => {
+      const result = await guardarProyeccionAction({ ...query, tipo: "COMERCIAL", registros: rows.map(row => ({ ...row, jabas: Number(row.jabas) })) })
+      if (result.ok) { toast.success("Programa comercial guardado"); setOpen(false); router.refresh() }
+      else setError(result.error)
+    })
+  }}><fieldset disabled={pending} className="space-y-3">{rows.map((row, i) => <div key={i} className="grid grid-cols-1 gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_100px_40px]">
+    <div className="space-y-1"><Label htmlFor={`customer-${i}`}>Cliente {i + 1}</Label><Input id={`customer-${i}`} required maxLength={255} value={row.cliente} onChange={e => update(i, "cliente", e.target.value)} /></div>
+    <div className="space-y-1"><Label htmlFor={`country-${i}`}>País</Label><Input id={`country-${i}`} required minLength={2} maxLength={100} value={row.pais} onChange={e => update(i, "pais", e.target.value)} /></div>
+    <div className="space-y-1"><Label htmlFor={`crates-${i}`}>Jabas</Label><Input id={`crates-${i}`} required type="number" min="0" max="1000000000" step="0.01" value={row.jabas} onChange={e => update(i, "jabas", e.target.value)} /></div>
+    <Button type="button" variant="ghost" size="icon" className="self-end" aria-label={`Eliminar cliente ${i + 1}`} disabled={rows.length === 1} onClick={() => setRows(rows.filter((_, index) => i !== index))}><Trash2 aria-hidden /></Button>
+  </div>)}<Button type="button" variant="outline" disabled={rows.length >= 500} onClick={() => setRows([...rows, { cliente: "", pais: "", jabas: "" }])}><Plus aria-hidden />Agregar fila</Button></fieldset>
+  <p className="text-sm font-semibold">Total: {rows.reduce((s, row) => s + Number(row.jabas || 0), 0).toLocaleString("es-PE")} jabas</p>
+  {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+  <div className="flex gap-2"><Button type="submit" disabled={pending}>{pending ? "Guardando…" : "Guardar registros"}</Button><Button type="button" variant="outline" disabled={pending} onClick={() => { setRows([{ cliente: "", pais: "", jabas: "" }]); setError(null) }}>Limpiar</Button></div></form></DialogContent></Dialog>
+}

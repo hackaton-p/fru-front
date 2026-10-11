@@ -61,6 +61,14 @@ export const httpRepositories: Repositories = {
     },
   },
   proyecciones: {
+    guardar: async ({ tipo, registros, plantaId, frutaId, anio, semana }) => {
+      const res = await apiRequest<RawImportResult>("/projections", {
+        method: "POST",
+        body: { plantId: plantaId, fruitId: frutaId, year: anio, week: semana, type: tipo,
+          rows: registros.map(r => ({ date: r.fecha, customerName: r.cliente, country: r.pais, quantity: r.jabas })) },
+      })
+      return { registros: res.imported }
+    },
     getCosecha: async (q) => {
       const raw = await apiRequest<RawProjection[]>("/projections", {
         query: { plantId: q.plantaId, fruitId: q.frutaId, year: q.anio, week: q.semana, type: "COSECHA" },
@@ -108,10 +116,15 @@ export const httpRepositories: Repositories = {
   },
   planes: {
     listar: async (filtro) => {
-      const res = await apiRequest<RawPlanList>("/plans", {
-        query: { plantId: filtro?.plantaId, status: filtro?.estado, limit: 100 },
-      })
-      return Promise.all(res.items.map(toPlan))
+      const items: RawPlan[] = []
+      for (let page = 1; ; page++) {
+        const res = await apiRequest<RawPlanList>("/plans", {
+          query: { plantId: filtro?.plantaId, status: filtro?.estado, limit: 100, page },
+        })
+        items.push(...res.items)
+        if (res.items.length < 100) break
+      }
+      return Promise.all(items.map(toPlan))
     },
     getById: async (id) => toPlan(await apiRequest<RawPlan>(`/plans/${id}`)),
     getVigente: async (q) => {
