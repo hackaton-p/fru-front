@@ -11,7 +11,7 @@ import {
 import type { ProyeccionCosechaDia, ProyeccionComercialCliente, SemanaQuery } from "@/lib/domain"
 import { formatDia, formatInt } from "@/lib/format"
 import { ImportExcelDialog } from "./import-excel-dialog"
-import { CommercialFormDialog, HarvestForm } from "./projection-forms"
+import { CommercialFormDialog, HarvestEditDialog, HarvestForm } from "./projection-forms"
 
 interface ProyeccionCardProps {
   title: string
@@ -36,11 +36,13 @@ function ProyeccionCard({ title, description, action, children }: ProyeccionCard
 interface CosechaCardProps {
   cosecha: ProyeccionCosechaDia[]
   query: SemanaQuery
+  /** Puede registrar o editar la proyección. */
   canImport: boolean
+  planId?: number
 }
 
 /** Proyección de cosecha por día, en jabas (solo lectura). */
-export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCardProps) {
+export function ProyeccionCosechaCard({ cosecha, query, canImport, planId }: CosechaCardProps) {
   const columns: DataTableColumn<ProyeccionCosechaDia>[] = [
     { id: "dia", header: "Día", cell: (c) => formatDia(c.fecha), footer: "Total" },
     {
@@ -55,16 +57,16 @@ export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCard
   return (
     <ProyeccionCard
       title="3. Proyección de cosecha"
-      description="Registrada por Área de cosecha · No editable una vez registrada"
+      description="Registrada por Área de cosecha · Editable mientras el plan no se envíe"
       action={
         canImport
           ? cosecha.length > 0
-            ? <Badge variant="secondary">Registrada</Badge>
-            : <ImportExcelDialog tipo="COSECHA" query={query} />
+            ? <div className="flex flex-wrap items-center gap-2"><Badge variant="secondary">Registrada</Badge><ImportExcelDialog tipo="COSECHA" query={query} planId={planId} replace /><HarvestEditDialog query={query} planId={planId} cosecha={cosecha} /></div>
+            : <ImportExcelDialog tipo="COSECHA" query={query} planId={planId} />
           : undefined
       }
     >
-      {canImport && cosecha.length === 0 ? <HarvestForm key={`${query.plantaId}-${query.frutaId}-${query.anio}-${query.semana}-${query.inicio}-${query.fechas?.join(",")}`} query={query} /> : <DataTable
+      {canImport && cosecha.length === 0 ? <HarvestForm key={`${query.plantaId}-${query.frutaId}-${query.anio}-${query.semana}-${query.inicio}-${query.fechas?.join(",")}`} query={query} planId={planId} /> : <DataTable
         caption="Proyección de cosecha por día"
         columns={columns}
         rows={cosecha}
@@ -78,11 +80,13 @@ export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCard
 interface ComercialCardProps {
   comercial: ProyeccionComercialCliente[]
   query: SemanaQuery
+  /** Puede registrar o editar el programa. */
   canImport: boolean
+  planId?: number
 }
 
 /** Programa comercial de la semana por cliente, en jabas (solo lectura). */
-export function ProgramaComercialCard({ comercial, query, canImport }: ComercialCardProps) {
+export function ProgramaComercialCard({ comercial, query, canImport, planId }: ComercialCardProps) {
   const columns: DataTableColumn<ProyeccionComercialCliente>[] = [
     { id: "cliente", header: "Cliente", cell: (c) => c.cliente, footer: "Total" },
     {
@@ -97,12 +101,12 @@ export function ProgramaComercialCard({ comercial, query, canImport }: Comercial
   return (
     <ProyeccionCard
       title="2. Programa comercial"
-      description="Registrado por Área comercial · No editable una vez registrado"
+      description="Registrado por Área comercial · Editable mientras el plan no se envíe"
       action={
         canImport
           ? comercial.length > 0
-            ? <Badge variant="secondary">Registrado</Badge>
-            : <div className="flex flex-wrap gap-2"><ImportExcelDialog tipo="COMERCIAL" query={query} /><CommercialFormDialog query={query} /></div>
+            ? <div className="flex flex-wrap items-center gap-2"><Badge variant="secondary">Registrado</Badge><ImportExcelDialog tipo="COMERCIAL" query={query} planId={planId} replace /><CommercialFormDialog query={query} planId={planId} initial={comercial} /></div>
+            : <div className="flex flex-wrap gap-2"><ImportExcelDialog tipo="COMERCIAL" query={query} planId={planId} /><CommercialFormDialog query={query} planId={planId} /></div>
           : undefined
       }
     >

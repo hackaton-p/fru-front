@@ -28,14 +28,23 @@ async function authHeader(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+/** NestJS puede devolver `message` como texto, lista de textos u objeto (p. ej. validaciones por campo). */
+function messageText(message: unknown): string | undefined {
+  if (typeof message === "string") return message
+  if (Array.isArray(message)) return message.map(messageText).filter(Boolean).join(". ")
+  if (message && typeof message === "object") {
+    const nested = (message as { message?: unknown }).message
+    return messageText(nested) ?? JSON.stringify(message)
+  }
+  return undefined
+}
+
 async function parseError(res: Response): Promise<ApiError> {
-  // NestJS devuelve { statusCode, message: string | string[], error }
+  // NestJS devuelve { statusCode, message: string | string[] | object, error }
   const payload = (await res.json().catch(() => null)) as
-    | { message?: string | string[]; error?: string; code?: string }
+    | { message?: unknown; error?: string; code?: string }
     | null
-  const message = Array.isArray(payload?.message)
-    ? payload.message.join(". ")
-    : payload?.message ?? res.statusText
+  const message = messageText(payload?.message) ?? res.statusText
   return new ApiError(message || `Error ${res.status}`, res.status, payload?.code ?? payload?.error)
 }
 

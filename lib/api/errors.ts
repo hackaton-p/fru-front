@@ -31,6 +31,9 @@ export function toUserMessage(error: unknown): string {
       if (error.message === "A projection for this plant, fruit, week and type already exists") {
         return "Esta proyección ya está registrada para la planta, fruta y semana seleccionadas. Actualiza la página para verla."
       }
+      if (error.message.startsWith("The projection cannot be replaced")) {
+        return "La proyección ya no se puede modificar porque el plan de esta semana fue enviado o aprobado."
+      }
       if (error.message === "Existing customer has a different country") {
         return "El cliente ya está registrado con otro país. Revisa el país ingresado."
       }

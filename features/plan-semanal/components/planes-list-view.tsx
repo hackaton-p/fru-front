@@ -25,12 +25,12 @@ export function PlanificadorListView({ planes, plantas, canGestionar }: {
   const visibles = sorted.filter(p => (!plantId || p.plantaId === Number(plantId)) &&
     (!estado || p.estado === estado) && `${name(p.plantaId)} ${p.semana} ${p.anio} ${p.id}`.toLowerCase().includes(search.toLowerCase()))
   const actions = (p: Plan) => <div className="flex flex-wrap gap-2">
-    <Button asChild variant="outline" size="sm"><Link href={`/planificador?vista=detalle&plan=${p.id}`} aria-label={`Ver plan ${p.id}`}><Eye aria-hidden />Ver</Link></Button>
-    {canGestionar && planEditable(p) && <Button asChild variant="outline" size="sm"><Link href={`/planificador?vista=editar&plan=${p.id}`} aria-label={`Modificar plan ${p.id}`}><Pencil aria-hidden />Modificar</Link></Button>}
+    <Button asChild variant="outline" size="sm"><Link href={`/planificador/${p.id}`} aria-label={`Ver plan ${p.id}`}><Eye aria-hidden />Ver</Link></Button>
+    {canGestionar && planEditable(p) && <Button asChild variant="outline" size="sm"><Link href={`/planificador/${p.id}/editar`} aria-label={`Modificar plan ${p.id}`}><Pencil aria-hidden />Modificar</Link></Button>}
     {canGestionar && ((p.estado === "BORRADOR" && !p.fechaEnvio) || p.estado === "RECHAZADO") && <DiscardPlanButton planId={p.id} />}
   </div>
   const columns: DataTableColumn<Plan>[] = [
-    { id: "plan", header: "Planificación", cell: p => <div className="space-y-1"><Link className="font-semibold hover:underline" href={`/planificador?vista=detalle&plan=${p.id}`}>{name(p.plantaId)} · Semana {p.semana}, {p.anio}</Link><p className="text-xs text-muted-foreground">Plan #{p.id}</p><div className="flex flex-wrap gap-2 md:hidden"><EstadoPlanBadge estado={p.estado} />{actions(p)}</div></div> },
+    { id: "plan", header: "Planificación", cell: p => <div className="space-y-1"><Link className="font-semibold hover:underline" href={`/planificador/${p.id}`}>{name(p.plantaId)} · Semana {p.semana}, {p.anio}</Link><p className="text-xs text-muted-foreground">Plan #{p.id}</p><div className="flex flex-wrap gap-2 md:hidden"><EstadoPlanBadge estado={p.estado} />{actions(p)}</div></div> },
     { id: "fechas", header: "Fechas", cell: p => formatRangoFechas(p.dias.map(d => d.fecha)) },
     { id: "meta", header: "Meta (jabas)", numeric: true, cell: p => formatInt(p.totales.jabasMeta) },
     { id: "personal", header: "Personal (pico)", numeric: true, cell: p => formatInt(p.totales.trabajadoresPico) },

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useTransition } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -10,17 +10,31 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { planningDates } from "@/lib/dates"
 import { formatDia } from "@/lib/format"
-import type { SemanaQuery } from "@/lib/domain"
+import type { ProyeccionComercialCliente, ProyeccionCosechaDia, SemanaQuery } from "@/lib/domain"
 import { guardarProyeccionAction } from "../actions"
 import { distributeHarvest } from "../lib/harvest-distribution"
 
-export function HarvestForm({ query }: { query: SemanaQuery }) {
+/** Aviso común tras guardar una proyección; si había un plan en edición, avisa que se recalculó. */
+function avisarGuardado(mensaje: string, planActualizado?: boolean) {
+  toast.success(mensaje, planActualizado ? { description: "La planificación se actualizó con los nuevos datos." } : undefined)
+}
+
+interface HarvestFormProps {
+  query: SemanaQuery
+  planId?: number
+  /** Proyección registrada que se está editando. */
+  initial?: ProyeccionCosechaDia[]
+  onSaved?: () => void
+}
+
+export function HarvestForm({ query, planId, initial, onSaved }: HarvestFormProps) {
   const router = useRouter()
-  const [total, setTotal] = useState("")
   const dates = planningDates(query)
   const dayCount = dates.length
-  const [values, setValues] = useState<string[]>(Array(dayCount).fill(""))
-  const [automatic, setAutomatic] = useState(true)
+  const initialValues = initial ? dates.map(date => String(initial.find(day => day.fecha === date)?.jabas ?? "")) : null
+  const [total, setTotal] = useState(() => initialValues ? String(initialValues.reduce((sum, value) => sum + Number(value || 0), 0)) : "")
+  const [values, setValues] = useState<string[]>(() => initialValues ?? Array(dayCount).fill(""))
+  const [automatic, setAutomatic] = useState(!initialValues)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const clear = () => { setTotal(""); setValues(Array(dayCount).fill("")); setAutomatic(true); setError(null) }
@@ -45,8 +59,8 @@ export function HarvestForm({ query }: { query: SemanaQuery }) {
     const sum = values.reduce((s, v) => s + Number(v || 0), 0)
     if (sum !== Number(total)) { setError("El total debe coincidir con la suma de los días. Ajusta los días o limpia el formulario para distribuir de nuevo."); return }
     startTransition(async () => {
-      const result = await guardarProyeccionAction({ ...query, tipo: "COSECHA", registros: dates.map((fecha, i) => ({ fecha, jabas: Number(values[i] || 0) })) })
-      if (result.ok) { toast.success("Proyección de cosecha guardada"); router.refresh() }
+      const result = await guardarProyeccionAction({ ...query, planId, tipo: "COSECHA", registros: dates.map((fecha, i) => ({ fecha, jabas: Number(values[i] || 0) })) })
+      if (result.ok) { avisarGuardado("Proyección de cosecha guardada", result.data.planActualizado); onSaved?.(); router.refresh() }
       else setError(result.error)
     })
   }
@@ -58,18 +72,37 @@ export function HarvestForm({ query }: { query: SemanaQuery }) {
       setTotal(next.some(v => v !== "") ? String(next.reduce((s, v) => s + Number(v || 0), 0)) : "")
     }} /></div>)}</div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    <div className="flex gap-2"><Button type="submit" disabled={pending || total === ""}>{pending ? "Guardando…" : "Guardar proyección"}</Button><Button type="button" variant="outline" onClick={clear} disabled={pending}>Limpiar</Button></div>
+    <div className="flex gap-2"><Button type="submit" disabled={pending || total === ""}>{pending ? "Guardando…" : initial ? "Guardar cambios" : "Guardar proyección"}</Button><Button type="button" variant="outline" onClick={clear} disabled={pending}>Limpiar</Button></div>
   </form>
+}
+
+export function HarvestEditDialog({ query, planId, cosecha }: { query: SemanaQuery; planId?: number; cosecha: ProyeccionCosechaDia[] }) {
+  const [open, setOpen] = useState(false)
+  return <Dialog open={open} onOpenChange={setOpen}>
+    <DialogTrigger asChild><Button variant="outline" size="icon" aria-label="Editar proyección de cosecha" title="Editar proyección de cosecha"><Pencil aria-hidden /></Button></DialogTrigger>
+    <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader><DialogTitle>Editar proyección de cosecha</DialogTitle><DialogDescription>Semana {query.semana} de {query.anio}.{planId ? " Al guardar, la planificación se recalcula automáticamente." : ""}</DialogDescription></DialogHeader>
+      <HarvestForm query={query} planId={planId} initial={cosecha} onSaved={() => setOpen(false)} />
+    </DialogContent>
+  </Dialog>
 }
 
 type CommercialRow = { cliente: string; pais: string; jabas: string }
 const PAISES = ["Perú", "Estados Unidos", "Países Bajos", "España", "Reino Unido", "China", "Canadá", "Chile", "Colombia", "México"]
 const EMPTY_ROW: CommercialRow = { cliente: "", pais: "Perú", jabas: "" }
 
-export function CommercialFormDialog({ query }: { query: SemanaQuery }) {
+interface CommercialFormDialogProps {
+  query: SemanaQuery
+  planId?: number
+  /** Programa registrado que se está editando; sin él, el diálogo agrega registros nuevos. */
+  initial?: ProyeccionComercialCliente[]
+}
+
+export function CommercialFormDialog({ query, planId, initial }: CommercialFormDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [rows, setRows] = useState<CommercialRow[]>([EMPTY_ROW])
+  const startRows = (): CommercialRow[] => initial?.length ? initial.map(row => ({ cliente: row.cliente, pais: row.pais ?? EMPTY_ROW.pais, jabas: String(row.jabas) })) : [EMPTY_ROW]
+  const [rows, setRows] = useState<CommercialRow[]>(startRows)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -87,16 +120,17 @@ export function CommercialFormDialog({ query }: { query: SemanaQuery }) {
     if (rows.length < 500 && rows[i].cliente.trim() && rows[i].jabas !== "") addRow()
     else formRef.current?.reportValidity()
   }
-  const reset = () => { setRows([EMPTY_ROW]); setError(null); focusField("cliente", 0) }
-  return <Dialog open={open} onOpenChange={(o: boolean) => { setOpen(o); if (!o) { setRows([EMPTY_ROW]); setError(null) } }}>
-    <DialogTrigger asChild><Button variant="outline" size="icon" aria-label="Agregar registros al programa comercial" title="Agregar registros al programa comercial"><Plus aria-hidden /></Button></DialogTrigger>
+  const reset = () => { setRows(initial?.length ? startRows() : [EMPTY_ROW]); setError(null); focusField("cliente", 0) }
+  const label = initial ? "Editar programa comercial" : "Agregar registros al programa comercial"
+  return <Dialog open={open} onOpenChange={(o: boolean) => { setOpen(o); if (!o) { setRows(startRows()); setError(null) } }}>
+    <DialogTrigger asChild><Button variant="outline" size="icon" aria-label={label} title={label}>{initial ? <Pencil aria-hidden /> : <Plus aria-hidden />}</Button></DialogTrigger>
     <DialogContent className="flex max-h-[85vh] flex-col gap-4 sm:max-w-2xl" onOpenAutoFocus={(e: Event) => { e.preventDefault(); focusField("cliente", 0) }}>
-      <DialogHeader><DialogTitle>Agregar programa comercial</DialogTitle><DialogDescription>Semana {query.semana} de {query.anio}. Los registros no podrán editarse después de guardar.</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle>{initial ? "Editar programa comercial" : "Agregar programa comercial"}</DialogTitle><DialogDescription>Semana {query.semana} de {query.anio}.{initial ? " Los registros guardados reemplazan al programa anterior." : ""}{planId ? " Al guardar, la planificación se recalcula automáticamente." : ""}</DialogDescription></DialogHeader>
       <form ref={formRef} className="flex min-h-0 flex-1 flex-col gap-4" onSubmit={e => {
         e.preventDefault(); setError(null)
         startTransition(async () => {
-          const result = await guardarProyeccionAction({ ...query, tipo: "COMERCIAL", registros: rows.map(row => ({ cliente: row.cliente.trim(), pais: row.pais, jabas: Number(row.jabas) })) })
-          if (result.ok) { toast.success("Programa comercial guardado"); setOpen(false); setRows([EMPTY_ROW]); router.refresh() }
+          const result = await guardarProyeccionAction({ ...query, planId, tipo: "COMERCIAL", registros: rows.map(row => ({ cliente: row.cliente.trim(), pais: row.pais, jabas: Number(row.jabas) })) })
+          if (result.ok) { avisarGuardado("Programa comercial guardado", result.data.planActualizado); setOpen(false); router.refresh() }
           else setError(result.error)
         })
       }}>
@@ -114,7 +148,7 @@ export function CommercialFormDialog({ query }: { query: SemanaQuery }) {
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <div className="flex items-center justify-between gap-2 border-t pt-4">
           <p className="text-sm font-semibold">Total: {total.toLocaleString("es-PE")} jabas · {rows.length} {rows.length === 1 ? "cliente" : "clientes"}</p>
-          <div className="flex gap-2"><Button type="button" variant="outline" disabled={pending} onClick={reset}>Limpiar</Button><Button type="submit" disabled={pending}>{pending ? "Guardando…" : "Guardar registros"}</Button></div>
+          <div className="flex gap-2"><Button type="button" variant="outline" disabled={pending} onClick={reset}>Limpiar</Button><Button type="submit" disabled={pending}>{pending ? "Guardando…" : initial ? "Guardar cambios" : "Guardar registros"}</Button></div>
         </div>
       </form>
     </DialogContent>

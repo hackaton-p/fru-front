@@ -17,6 +17,7 @@ import {
 import { getRepositories } from "@/lib/repositories"
 import { parametrosSchema } from "@/lib/parametros"
 import { nextPlanningMonday, planningDates } from "@/lib/dates"
+import { planEditable } from "./lib/plan-comparator"
 
 const RUTA = "/planificador"
 const MAX_EXCEL_BYTES = 10 * 1024 * 1024
@@ -44,6 +45,26 @@ async function assertPuedeGestionar(plantaId?: number) {
   if (plantaId !== undefined && user.plantaId !== null && user.plantaId !== plantaId) {
     throw new ForbiddenError("No puedes planificar otra planta.")
   }
+}
+
+/** Recalcula un plan en edición (mismos parámetros y período) con las proyecciones ya guardadas. */
+async function regenerarPlan(planId: number) {
+  const repos = getRepositories()
+  const plan = await repos.planes.getById(planId)
+  await assertPuedeGestionar(plan.plantaId)
+  if (!planEditable(plan)) throw new ForbiddenError("El plan ya fue enviado y no se puede modificar.")
+  await repos.planes.aplicar({
+    planId,
+    plantaId: plan.plantaId,
+    frutaId: plan.frutaId,
+    anio: plan.anio,
+    semana: plan.semana,
+    inicio: plan.dias[0]?.fecha,
+    cantidadDias: plan.dias.length,
+    fechas: plan.dias.map(day => day.fecha).sort(),
+    escenarioCosecha: plan.escenarioCosecha,
+    parametros: plan.parametrosUsados,
+  })
 }
 
 /** Calcula un plan sin guardarlo (Paso 1 · Simulación). */
@@ -80,6 +101,7 @@ export async function enviarPlanAction(planId: number): Promise<ActionResult<Pla
 }
 
 const importarSchema = semanaSchema.extend({
+  planId: z.number().int().positive().optional(),
   tipo: z.enum(["COSECHA", "COMERCIAL"]),
   archivo: z
     .instanceof(File, { message: "Selecciona un archivo Excel." })
@@ -102,18 +124,23 @@ export async function importarProyeccionAction(
       frutaId: Number(formData.get("frutaId")),
       anio: Number(formData.get("anio")),
       semana: Number(formData.get("semana")),
+      inicio: formData.get("inicio") || undefined,
+      fechas: formData.get("fechas") ? String(formData.get("fechas")).split(",") : undefined,
+      planId: formData.get("planId") ? Number(formData.get("planId")) : undefined,
       archivo: formData.get("archivo"),
     })
     await assertPuedeGestionar(data.plantaId)
     const resultado = await getRepositories().proyecciones.importar(data)
+    if (data.planId) await regenerarPlan(data.planId)
     revalidatePath(RUTA)
-    return resultado
+    return { ...resultado, planActualizado: Boolean(data.planId) }
   })
 }
 
 export async function guardarProyeccionAction(input: GuardarProyeccionInput): Promise<ActionResult<ImportarProyeccionResultado>> {
   return runAction(async () => {
     const schema = semanaSchema.extend({
+      planId: z.number().int().positive().optional(),
       tipo: z.enum(["COSECHA", "COMERCIAL"]),
       registros: z.array(z.object({
         fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -131,8 +158,9 @@ export async function guardarProyeccionAction(input: GuardarProyeccionInput): Pr
       throw new Error("Completa los registros de la proyección.")
     }
     const result = await getRepositories().proyecciones.guardar(data)
+    if (data.planId) await regenerarPlan(data.planId)
     revalidatePath(RUTA)
-    return result
+    return { ...result, planActualizado: Boolean(data.planId) }
   })
 }
 

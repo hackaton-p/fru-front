@@ -132,9 +132,8 @@ export const mockRepositories: Repositories = {
   },
   proyecciones: {
     async guardar(input) {
-      const projectionId = projectionKey(input, input.tipo)
-      if (projections.has(projectionId)) throw new ApiError("La proyección ya fue registrada.", 409)
-      projections.set(projectionId, input)
+      // Registrar de nuevo reemplaza la proyección anterior (edición).
+      projections.set(projectionKey(input, input.tipo), input)
       return { registros: input.registros.length }
     },
     async getCosecha(q) {
@@ -146,7 +145,7 @@ export const mockRepositories: Repositories = {
     async getComercial(q) {
       await delay()
       const saved = projections.get(projectionKey(q, "COMERCIAL"))
-      if (saved) return saved.registros.map((r, i) => ({ clienteId: i + 1, cliente: r.cliente!, jabas: r.jabas }))
+      if (saved) return saved.registros.map((r, i) => ({ clienteId: i + 1, cliente: r.cliente!, pais: r.pais, jabas: r.jabas }))
       return comercialMock(q.plantaId)
     },
     async importar({ archivo }) {

@@ -14,11 +14,11 @@ export function AlertaPlanificacion({ cosechaJabas, comercialJabas }: AlertaPlan
   if (!brecha.hayBrecha) return null
 
   return (
-    <Alert variant="destructive">
+    <Alert variant="destructive" className="border-destructive/50 bg-destructive/10 px-4 py-3 text-base shadow-sm">
       <TriangleAlert aria-hidden />
-      <AlertTitle>Alerta de planificación: la cosecha no cubre el programa comercial</AlertTitle>
+      <AlertTitle className="text-base font-semibold">Alerta de planificación: la cosecha no cubre el programa comercial</AlertTitle>
       <AlertDescription>
-        <p>
+        <p className="text-sm">
           Cosecha {formatInt(cosechaJabas)} jabas · Programa comercial {formatInt(comercialJabas)}{" "}
           jabas · Faltan{" "}
           <strong>

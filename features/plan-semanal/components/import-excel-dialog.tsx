@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react"
 import { FileSpreadsheet } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,19 +29,24 @@ const TITULO: Record<TipoProyeccion, string> = {
 interface ImportExcelDialogProps {
   tipo: TipoProyeccion
   query: SemanaQuery
+  planId?: number
+  /** Ya hay una proyección registrada: el archivo la reemplaza. */
+  replace?: boolean
 }
 
-/** Carga una proyección desde Excel. Las proyecciones son inmutables una vez registradas. */
-export function ImportExcelDialog({ tipo, query }: ImportExcelDialogProps) {
+/** Carga una proyección desde Excel. Si ya existía, la reemplaza. */
+export function ImportExcelDialog({ tipo, query, planId, replace = false }: ImportExcelDialogProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [, formAction, isPending] = useActionState<ImportarState, FormData>(
     async (prev, formData) => {
       const res = await importarProyeccionAction(prev, formData)
       if (res?.ok) {
         toast.success("Proyección importada", {
-          description: `${res.data.registros} registros cargados.`,
+          description: res.data.planActualizado ? "La planificación se actualizó con los nuevos datos." : `${res.data.registros} registros cargados.`,
         })
         setOpen(false)
+        router.refresh()
       } else if (res) {
         toast.error("No se pudo importar", { description: res.error })
       }
@@ -62,7 +68,7 @@ export function ImportExcelDialog({ tipo, query }: ImportExcelDialogProps) {
           <DialogHeader>
             <DialogTitle>{TITULO[tipo]}</DialogTitle>
             <DialogDescription>
-              Semana {query.semana}, en jabas. Una vez registrada, la proyección no se puede editar.
+              Semana {query.semana}, en jabas.{replace ? " El archivo reemplaza la proyección registrada." : ""}{planId ? " Al importar, la planificación se recalcula automáticamente." : ""}
             </DialogDescription>
           </DialogHeader>
           <input type="hidden" name="tipo" value={tipo} />
@@ -70,6 +76,9 @@ export function ImportExcelDialog({ tipo, query }: ImportExcelDialogProps) {
           <input type="hidden" name="frutaId" value={query.frutaId} />
           <input type="hidden" name="anio" value={query.anio} />
           <input type="hidden" name="semana" value={query.semana} />
+          {query.inicio && <input type="hidden" name="inicio" value={query.inicio} />}
+          {query.fechas && <input type="hidden" name="fechas" value={query.fechas.join(",")} />}
+          {planId && <input type="hidden" name="planId" value={planId} />}
           <Field>
             <FieldLabel htmlFor={inputId}>Archivo Excel</FieldLabel>
             <Input
