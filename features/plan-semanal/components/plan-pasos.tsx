@@ -1,25 +1,66 @@
 import { Badge } from "@/components/ui/badge"
 import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 
-const PASOS = [
-  "Simular con distintas cifras",
-  "Aplicar la que te convence como plan oficial",
-  "Enviar a aprobación",
-]
+interface PlanPasosProps {
+  configuracionLista: boolean
+  cosechaLista: boolean
+  comercialLista: boolean
+  planCreado: boolean
+}
 
-/** Los tres pasos del flujo de planificación. */
-export function PlanPasos() {
+/** Flujo para iniciar un plan semanal a partir de sus proyecciones. */
+export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, planCreado }: PlanPasosProps) {
+  const proyeccionesListas = cosechaLista && comercialLista
+  const detalleProyecciones = proyeccionesListas
+    ? "Cosecha y programa comercial listos"
+    : !cosechaLista && !comercialLista
+      ? "Carga la proyección de cosecha y el plan comercial"
+      : cosechaLista
+        ? "Falta cargar el programa comercial"
+        : "Falta cargar la proyección de cosecha"
+  const pasos = [
+    {
+      titulo: "Configurar planta",
+      detalle: configuracionLista
+        ? "Parámetros confirmados"
+        : "Revisa los valores sugeridos en Configuración",
+      listo: configuracionLista,
+    },
+    {
+      titulo: "Revisar proyecciones",
+      detalle: detalleProyecciones,
+      listo: proyeccionesListas,
+    },
+    {
+      titulo: "Simular el plan semanal",
+      detalle: planCreado
+        ? "Simulación aplicada al plan oficial"
+        : configuracionLista && proyeccionesListas
+          ? "Prueba escenarios y ajusta parámetros"
+          : "Se habilita al completar los pasos 1 y 2",
+      listo: planCreado,
+    },
+    {
+      titulo: "Crear plan oficial",
+      detalle: planCreado
+        ? "Plan listo; puedes enviarlo a aprobación"
+        : "Guarda la simulación; después podrás enviarlo a aprobación",
+      listo: planCreado,
+    },
+  ]
+
   return (
-    <ItemGroup className="grid gap-2 md:grid-cols-3" aria-label="Pasos">
-      {PASOS.map((paso, i) => (
-        <Item key={paso} variant="outline" size="sm" className="bg-card">
+    <ItemGroup className="grid gap-2 md:grid-cols-4" aria-label="Flujo para crear el plan semanal">
+      {pasos.map((paso, i) => (
+        <Item key={paso.titulo} variant="outline" size="sm" className="bg-card">
           <ItemMedia>
-            <Badge variant="secondary" className="tabular-nums">
+            <Badge variant={paso.listo ? "default" : "secondary"} className="tabular-nums">
               {i + 1}
             </Badge>
           </ItemMedia>
           <ItemContent>
-            <ItemTitle>{paso}</ItemTitle>
+            <ItemTitle>{paso.titulo}</ItemTitle>
+            <p className="text-xs text-muted-foreground">{paso.detalle}</p>
           </ItemContent>
         </Item>
       ))}

@@ -2,12 +2,10 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { Grape } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { serverEnv } from "@/lib/config/env"
 import { getCurrentUser } from "@/lib/auth/session"
 import { MainNav } from "./main-nav"
 import { ModeToggle } from "./mode-toggle"
 import { navItemsFor } from "./nav-items"
-import { RolDemoSwitcher } from "./rol-demo-switcher"
 import { UserMenu } from "./user-menu"
 
 /** Partes del header que dependen de la sesión (cookies → se resuelven por request). */
@@ -16,7 +14,7 @@ async function SessionNav() {
   return (
     <>
       <MainNav items={navItemsFor(user.rol)} />
-      {serverEnv().API_MOCK ? <RolDemoSwitcher user={user} /> : <UserMenu user={user} />}
+      <UserMenu user={user} />
     </>
   )
 }

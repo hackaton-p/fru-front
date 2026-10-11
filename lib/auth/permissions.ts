@@ -4,7 +4,7 @@ import type { Rol } from "@/lib/domain"
 const PERMISOS = {
   "plan:gestionar": ["PLANIFICADOR"],
   "plan:aprobar": ["SUBGERENTE"],
-  "planta:editar": ["SUBGERENTE"],
+  "planta:editar": ["PLANIFICADOR", "SUBGERENTE", "JEFE_TURNO"],
   "jornada:registrar": ["JEFE_TURNO"],
   "dashboard:ver": ["PLANIFICADOR", "SUBGERENTE", "JEFE_TURNO"],
 } as const satisfies Record<string, readonly Rol[]>

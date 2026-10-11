@@ -22,6 +22,8 @@ export interface ParametrosPlanta {
 export interface Planta extends ParametrosPlanta {
   id: number
   nombre: string
+  /** Se completa cuando Subgerencia confirma los parámetros de la planta. */
+  configuradaAt?: string | null
   /** Última vez que se cambiaron los valores por defecto (ISO), si el back la expone. */
   updatedAt?: string | null
 }

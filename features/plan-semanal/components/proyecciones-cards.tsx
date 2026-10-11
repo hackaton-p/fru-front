@@ -1,4 +1,5 @@
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardAction,
@@ -54,7 +55,13 @@ export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCard
     <ProyeccionCard
       title="Proyección de cosecha"
       description="Registrada por Área de cosecha · No editable una vez registrada"
-      action={canImport ? <ImportExcelDialog tipo="COSECHA" query={query} /> : undefined}
+      action={
+        canImport
+          ? cosecha.length > 0
+            ? <Badge variant="secondary">Registrada</Badge>
+            : <ImportExcelDialog tipo="COSECHA" query={query} />
+          : undefined
+      }
     >
       <DataTable
         caption="Proyección de cosecha por día"
@@ -90,7 +97,13 @@ export function ProgramaComercialCard({ comercial, query, canImport }: Comercial
     <ProyeccionCard
       title="Programa comercial"
       description="Registrado por Área comercial · No editable una vez registrado"
-      action={canImport ? <ImportExcelDialog tipo="COMERCIAL" query={query} /> : undefined}
+      action={
+        canImport
+          ? comercial.length > 0
+            ? <Badge variant="secondary">Registrado</Badge>
+            : <ImportExcelDialog tipo="COMERCIAL" query={query} />
+          : undefined
+      }
     >
       <DataTable
         caption="Programa comercial por cliente"

@@ -146,6 +146,15 @@ function PlantaPanel({
 
   return (
     <div className="flex flex-col gap-6">
+      {!planta.configuradaAt ? (
+        <Alert>
+          <AlertTitle>Configuración pendiente</AlertTitle>
+          <AlertDescription>
+            Revisa los valores sugeridos y guárdalos para habilitar la planificación de esta planta.
+            Puedes guardar los valores sugeridos tal como están.
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start">
         <div className="flex flex-col gap-6">
           {GRUPOS.map((grupo) => (
@@ -181,6 +190,10 @@ function PlantaPanel({
                 {n} cambio{n > 1 ? "s" : ""} sin guardar en Planta {planta.nombre}.
                 {!values ? " Corrige los campos marcados para guardar." : ""}
               </span>
+            ) : !planta.configuradaAt ? (
+              <span className="font-normal text-warning-foreground">
+                Configuración pendiente · confirma los valores sugeridos para habilitar planes.
+              </span>
             ) : planta.updatedAt ? (
               <span className="font-normal text-muted-foreground">
                 Sin cambios · Última modificación <LocalDateTime iso={planta.updatedAt} />
@@ -205,11 +218,11 @@ function PlantaPanel({
               type="button"
               size="lg"
               className="h-12 flex-1 rounded-full px-6 sm:flex-none"
-              disabled={n === 0 || !values || pending}
+              disabled={(n === 0 && Boolean(planta.configuradaAt)) || !values || pending}
               onClick={guardar}
             >
               {pending ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" aria-hidden />}
-              {pending ? "Guardando…" : "Guardar cambios"}
+              {pending ? "Guardando…" : planta.configuradaAt ? "Guardar cambios" : "Guardar configuración"}
             </Button>
           </div>
         </div>

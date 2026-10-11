@@ -14,6 +14,7 @@ export const PLANTAS: Planta[] = [
     horaInicio: "17:00",
     factorEficiencia: 0.8,
     toleranciaVolumen: 5,
+    configuradaAt: "2026-10-08T14:30:00.000Z",
     updatedAt: "2026-10-08T14:30:00.000Z",
   },
   {
@@ -26,6 +27,7 @@ export const PLANTAS: Planta[] = [
     horaInicio: "17:00",
     factorEficiencia: 0.8,
     toleranciaVolumen: 5,
+    configuradaAt: "2026-10-02T16:10:00.000Z",
     updatedAt: "2026-10-02T16:10:00.000Z",
   },
 ]

@@ -36,6 +36,8 @@ export interface RawParameters {
 export interface RawPlant extends RawParameters {
   id: number
   name: string
+  updatedAt?: string | null
+  configurationCompletedAt?: string | null
 }
 
 export interface RawFruit {
@@ -144,7 +146,13 @@ export function toRawParametros(p: ParametrosPlanta) {
 }
 
 export function toPlanta(p: RawPlant): Planta {
-  return { id: p.id, nombre: p.name, ...toParametros(p) }
+  return {
+    id: p.id,
+    nombre: p.name,
+    configuradaAt: p.configurationCompletedAt ?? null,
+    updatedAt: p.updatedAt ?? null,
+    ...toParametros(p),
+  }
 }
 
 export function toCreatePlanBody(input: CalcularPlanInput) {

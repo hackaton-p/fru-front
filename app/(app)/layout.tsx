@@ -1,6 +1,8 @@
 import { AppHeader } from "@/components/layout/app-header"
+import { getCurrentUser } from "@/lib/auth/session"
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  await getCurrentUser()
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <AppHeader />
