@@ -74,6 +74,9 @@ const EDITABLES = [
 
 function calcular(input: CalcularPlanInput): PlanCalculado {
   const planta = plantaOrThrow(input.plantaId)
+  if (!planta.configuradaAt) {
+    throw new ApiError("Confirma la configuración de la planta antes de planificar.", 409)
+  }
   return calcularPlan({
     cosecha: cosechaMock(input.plantaId, input.semana),
     totalComercial: comercialMock(input.plantaId).reduce((s, c) => s + c.jabas, 0),
@@ -98,7 +101,13 @@ export const mockRepositories: Repositories = {
       const planta = plantaOrThrow(id)
       const parsed = parametrosSchema.safeParse(parametros)
       if (!parsed.success) throw new ApiError("Hay valores fuera de rango.", 400)
-      const actualizada: Planta = { ...planta, ...parsed.data, updatedAt: new Date().toISOString() }
+      const ahora = new Date().toISOString()
+      const actualizada: Planta = {
+        ...planta,
+        ...parsed.data,
+        configuradaAt: ahora,
+        updatedAt: ahora,
+      }
       plantas.set(id, actualizada)
       return actualizada
     },

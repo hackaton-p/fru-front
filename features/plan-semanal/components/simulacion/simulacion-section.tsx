@@ -1,7 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
-import { CircleAlert } from "lucide-react"
+import { CircleAlert, TriangleAlert } from "lucide-react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -40,11 +40,13 @@ interface SimulacionSectionProps {
   planta: Planta
   defaults: ParametrosPlanta
   plan: Plan | null
-  initial: PlanSemanalData["simulacionInicial"]
+  initial: NonNullable<PlanSemanalData["simulacionInicial"]>
   canGestionar: boolean
+  proyeccionesListas: boolean
+  configuracionLista: boolean
 }
 
-/** Paso 1 · Simulación: borrador que se recalcula en el back y no se guarda. */
+/** Paso 2 · Simulación: borrador que se recalcula en el back y no se guarda. */
 export function SimulacionSection({
   query,
   planta,
@@ -52,12 +54,15 @@ export function SimulacionSection({
   plan,
   initial,
   canGestionar,
+  proyeccionesListas,
+  configuracionLista,
 }: SimulacionSectionProps) {
   const sim = useSimulacion({ query, defaults, initial })
   const [isApplying, startApplying] = useTransition()
 
   const estado = estadoCambios({ escenario: sim.escenario, parametros: sim.parametros.values }, plan)
-  const editable = canGestionar && planEditable(plan)
+  const fuentesListas = configuracionLista && proyeccionesListas
+  const editable = canGestionar && planEditable(plan) && fuentesListas
   const canApply = editable && estado !== "IGUAL" && !sim.isStale && !sim.error && sim.input !== null
 
   const aplicar = () => {
@@ -76,10 +81,10 @@ export function SimulacionSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Paso 1 · Simulación</CardTitle>
+        <CardTitle>Paso 2 · Simulación</CardTitle>
         <CardDescription>
-          El sistema calcula cuántos trabajadores necesitas cada día con los parámetros del plan.
-          Nada se guarda hasta que lo apliques.
+          El sistema cruza la cosecha proyectada con el programa comercial y calcula los recursos
+          diarios. Ajusta parámetros y escenario; nada se guarda hasta que apliques el plan.
         </CardDescription>
         <CardAction>
           <Badge variant="outline">Borrador · no guardado</Badge>
@@ -87,6 +92,25 @@ export function SimulacionSection({
       </CardHeader>
 
       <CardContent className="flex flex-col gap-6">
+        {!configuracionLista ? (
+          <Alert>
+            <TriangleAlert aria-hidden />
+            <AlertTitle>Falta confirmar la configuración de la planta</AlertTitle>
+            <AlertDescription>
+              Revisa y guarda los parámetros sugeridos desde Configuración antes de simular o crear
+              el plan.
+            </AlertDescription>
+          </Alert>
+        ) : !proyeccionesListas ? (
+          <Alert>
+            <TriangleAlert aria-hidden />
+            <AlertTitle>Completa las proyecciones para iniciar el plan</AlertTitle>
+            <AlertDescription>
+              Carga la proyección de cosecha y el programa comercial de esta semana. Con ambas bases
+              listas podrás simular y crear el plan semanal.
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <ParametrosPlanPanel
           planta={planta}
           defaults={defaults}
@@ -105,19 +129,23 @@ export function SimulacionSection({
           </Alert>
         ) : null}
 
-        <div
-          aria-busy={sim.isStale}
-          className={cn("flex flex-col gap-4 transition-opacity", sim.isStale && "opacity-60")}
-        >
-          <PlanKpis totales={sim.resultado.totales} />
-          <SimulacionDiasTable dias={sim.resultado.dias} />
-        </div>
+        {fuentesListas ? (
+          <div
+            aria-busy={sim.isStale}
+            className={cn("flex flex-col gap-4 transition-opacity", sim.isStale && "opacity-60")}
+          >
+            <PlanKpis totales={sim.resultado.totales} />
+            <SimulacionDiasTable dias={sim.resultado.dias} />
+          </div>
+        ) : null}
 
-        <p className="text-sm text-muted-foreground">
-          Trabajadores = jabas ÷ (rendimiento × eficiencia × horas de jornada), con tope en el
-          personal máximo. El margen es cuánta fruta adicional se puede procesar dentro de la
-          jornada más las horas extra permitidas.
-        </p>
+        {fuentesListas ? (
+          <p className="text-sm text-muted-foreground">
+            Trabajadores = jabas ÷ (rendimiento × eficiencia × horas de jornada), con tope en el
+            personal máximo. El margen es cuánta fruta adicional se puede procesar dentro de la
+            jornada más las horas extra permitidas.
+          </p>
+        ) : null}
       </CardContent>
 
       {canGestionar ? (

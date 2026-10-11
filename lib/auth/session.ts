@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/api/errors"
 import { serverEnv } from "@/lib/config/env"
 import type { Rol, Usuario } from "@/lib/domain"
 
-/** Cookie donde el selector "Ver como" guarda el rol de la demo. */
+/** Cookie de sesión local cuando el front corre con datos mock. */
 export const DEMO_ROL_COOKIE = "demo_rol"
 
 /** Un usuario de ejemplo por rol, mientras API_MOCK esté activo. */
@@ -45,14 +45,14 @@ const getUsuarioReal = cache(async (): Promise<Usuario> => {
 })
 
 /**
- * Usuario de la sesión actual. Con `API_MOCK=true` usa el rol elegido en "Ver como"
- * (planificador de Piura por defecto); contra el API real exige sesión y redirige a
- * `/login` si falta o venció.
+ * Usuario de la sesión actual. Tanto con datos mock como con el API real, exige
+ * que el usuario haya pasado por el formulario de login.
  */
 export async function getCurrentUser(): Promise<Usuario> {
   if (serverEnv().API_MOCK) {
     const rol = (await cookies()).get(DEMO_ROL_COOKIE)?.value
-    return USUARIOS_DEMO[isRol(rol) ? rol : "PLANIFICADOR"]
+    if (!isRol(rol)) redirect("/login")
+    return USUARIOS_DEMO[rol]
   }
   return getUsuarioReal()
 }

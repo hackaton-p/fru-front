@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { loginAction } from "@/lib/auth/actions"
 
-export function LoginForm() {
+export function LoginForm({ mockMode = false }: { mockMode?: boolean }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [email, setEmail] = useState("")
@@ -43,6 +43,12 @@ export function LoginForm() {
           className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {error}
+        </p>
+      ) : null}
+
+      {mockMode ? (
+        <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+          Demo: contraseña <span className="font-mono">password123</span>. Planificador: <span className="font-mono">planificador@piura.com</span>; Subgerente: <span className="font-mono">subgerente@example.com</span>; Jefe de turno: <span className="font-mono">jefe.turno@piura.com</span>.
         </p>
       ) : null}
 

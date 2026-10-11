@@ -19,12 +19,12 @@ interface PlanOficialSectionProps {
   defaults: ParametrosPlanta
 }
 
-/** Paso 2 · Plan oficial guardado, con el personal por área y los valores finales. */
+/** Paso 3 · Plan oficial guardado, con el personal por área y los valores finales. */
 export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Paso 2 · Plan oficial</CardTitle>
+        <CardTitle>Paso 3 · Plan oficial</CardTitle>
         <CardDescription>
           {plan ? (
             <>
@@ -56,8 +56,9 @@ export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) 
               </EmptyMedia>
               <EmptyTitle>Aún no hay plan oficial</EmptyTitle>
               <EmptyDescription>
-                Simula en el paso 1 y, cuando las cifras te convenzan, pulsa «Aplicar como plan
-                oficial». Recién ahí se guarda y se puede enviar a aprobación.
+                Completa las proyecciones y simula en el paso 2; cuando las cifras te convenzan,
+                pulsa «Aplicar como plan oficial». Recién ahí se guarda y se puede enviar a
+                aprobación.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

@@ -9,18 +9,6 @@ import { serverEnv } from "@/lib/config/env"
 import type { Rol } from "@/lib/domain"
 import { DEMO_ROL_COOKIE, isRol } from "./session"
 
-/** Selector "Ver como" de la demo: guarda el rol y lleva a su pantalla principal. */
-export async function cambiarRolDemoAction(rol: string) {
-  if (!isRol(rol)) return
-  ;(await cookies()).set(DEMO_ROL_COOKIE, rol, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  })
-  redirect(HOME_POR_ROL[rol])
-}
-
 const credencialesSchema = z.object({
   email: z.string().trim().min(1).email(),
   password: z.string().min(1),
@@ -28,6 +16,12 @@ const credencialesSchema = z.object({
 
 function apiUrl(path: string): URL {
   return new URL(`api/${path}`, serverEnv().API_URL.replace(/\/?$/, "/"))
+}
+
+const DEMO_CUENTAS: Record<string, Rol> = {
+  "planificador@piura.com": "PLANIFICADOR",
+  "subgerente@example.com": "SUBGERENTE",
+  "jefe.turno@piura.com": "JEFE_TURNO",
 }
 
 /**
@@ -42,6 +36,20 @@ export async function loginAction(input: {
   const parsed = credencialesSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: "Correo o contraseña inválidos." }
 
+  if (serverEnv().API_MOCK) {
+    const demoRol = DEMO_CUENTAS[parsed.data.email.toLowerCase()]
+    if (parsed.data.password !== "password123" || !demoRol) {
+      return { ok: false, error: "Correo o contraseña incorrectos." }
+    }
+    ;(await cookies()).set(DEMO_ROL_COOKIE, demoRol, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    })
+    return { ok: true, data: { redirectTo: HOME_POR_ROL[demoRol] } }
+  }
+
   let signInRes: Response
   try {
     signInRes = await fetch(apiUrl("auth/sign-in/email"), {
@@ -55,7 +63,10 @@ export async function loginAction(input: {
       signal: AbortSignal.timeout(serverEnv().API_TIMEOUT_MS),
     })
   } catch {
-    return { ok: false, error: "No se pudo conectar con el servidor." }
+    return {
+      ok: false,
+      error: "No se pudo conectar con la API. Verifica que esté iniciada y que API_URL apunte a ella.",
+    }
   }
 
   if (!signInRes.ok) {
@@ -81,7 +92,19 @@ export async function loginAction(input: {
   } catch {
     return { ok: false, error: "No se pudo conectar con el servidor." }
   }
-  if (!meRes.ok) return { ok: false, error: "No se pudo cargar tu perfil." }
+  if (!meRes.ok) {
+    if (meRes.status === 403) {
+      return {
+        ok: false,
+        error:
+          "La cuenta existe, pero no tiene un perfil de packing habilitado o asignado. Solicita que la registren con un rol de la aplicación.",
+      }
+    }
+    if (meRes.status === 401) {
+      return { ok: false, error: "La API no pudo validar la sesión de esta cuenta." }
+    }
+    return { ok: false, error: "No se pudo cargar el perfil de la cuenta desde la API." }
+  }
   const actor = (await meRes.json()) as { role: Rol }
 
   const redirectTo = HOME_POR_ROL[actor.role]
@@ -107,5 +130,6 @@ export async function logoutAction() {
     }).catch(() => {})
   }
   store.delete(serverEnv().AUTH_COOKIE_NAME)
+  store.delete(DEMO_ROL_COOKIE)
   redirect("/login")
 }
