@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
+import { connection } from "next/server"
 import { can } from "@/lib/auth/permissions"
 import { getCurrentUser } from "@/lib/auth/session"
 import { CursoView } from "@/features/subgerente/components/curso-view"
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 async function Curso({ searchParams }: Pick<PageProps<"/subgerente/curso">, "searchParams">) {
   const [params, user] = await Promise.all([searchParams, getCurrentUser()])
   if (!can(user.rol, "plan:aprobar")) return <SoloSubgerente />
+  // La semana por defecto depende de la fecha de hoy: se calcula por request, no al prerenderizar.
+  await connection()
   const data = await getCursoData(params, user, new Date())
   return <CursoView data={data} />
 }
