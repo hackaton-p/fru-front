@@ -1,6 +1,6 @@
 import "server-only"
 import { z } from "zod"
-import { isoWeek, mondayOfIsoWeek, nextPlanningMonday, parseIsoDate } from "@/lib/dates"
+import { isoWeek, mondayOfIsoWeek, nextPlanningMonday, parseIsoDate, planningDates } from "@/lib/dates"
 import {
   parametrosDe,
   type EscenarioCosecha,
@@ -120,7 +120,10 @@ export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan
   const frutas = frutasResult.status === "fulfilled" ? frutasResult.value : [fruta]
   if (frutasResult.status === "rejected") registrarError(frutasResult, "No se pudo leer el catálogo de frutas")
 
-  const cosecha = cosechaResult.status === "fulfilled" ? cosechaResult.value : []
+  // El back guarda las proyecciones por planta, fruta, año y semana (no por plan):
+  // se muestran solo los días que este plan planifica.
+  const dias = new Set(planningDates(query))
+  const cosecha = cosechaResult.status === "fulfilled" ? cosechaResult.value.filter(day => dias.has(day.fecha)) : []
   if (cosechaResult.status === "rejected") registrarError(cosechaResult, "No se pudo leer la proyección de cosecha")
   const comercial = comercialResult.status === "fulfilled" ? comercialResult.value : []
   if (comercialResult.status === "rejected") registrarError(comercialResult, "No se pudo leer el programa comercial")

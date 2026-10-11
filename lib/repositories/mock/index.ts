@@ -1,7 +1,7 @@
 import "server-only"
 import { ApiError } from "@/lib/api/errors"
 import { addDays, mondayOfIsoWeek, nextPlanningMonday, planningDates, toIsoDate } from "@/lib/dates"
-import type { CalcularPlanInput, Fruta, Plan, PlanCalculado, Planta, SemanaQuery, GuardarProyeccionInput } from "@/lib/domain"
+import type { CalcularPlanInput, Fruta, Plan, PlanCalculado, Planta, ProyeccionComercialCliente, SemanaQuery, GuardarProyeccionInput } from "@/lib/domain"
 import { parametrosSchema } from "@/lib/parametros"
 import type { Repositories } from "../types"
 import { cursoMock } from "./curso-data"
@@ -100,10 +100,11 @@ function calcular(input: CalcularPlanInput): PlanCalculado {
     const saved = projections.get(projectionKey(query, "COSECHA"))
     return (saved?.registros.map(r => ({ frutaId: id, fruta: nombre, fecha: r.fecha!, jabas: r.jabas })) ?? cosechaMock(input.plantaId, input.semana, id))
   })
-  const comercial = FRUTAS.flatMap(({ id }) => {
+  const comercial: ProyeccionComercialCliente[] = FRUTAS.flatMap(({ id, nombre }) => {
     const query = { ...input, frutaId: id }
     const saved = projections.get(projectionKey(query, "COMERCIAL"))
-    return saved?.registros.map((r, index) => ({ frutaId: id, clienteId: index + 1, cliente: r.cliente!, jabas: r.jabas })) ?? comercialMock(input.plantaId, id)
+    return saved?.registros.map((r, index) => ({ frutaId: id, fruta: nombre, clienteId: index + 1, cliente: r.cliente!, pais: r.pais, jabas: r.jabas }))
+      ?? comercialMock(input.plantaId, id).map(row => ({ ...row, frutaId: id, fruta: nombre }))
   })
   return calcularPlan({
     cosecha: input.fechas || input.inicio ? cosecha.filter(d => planningDates(input).includes(d.fecha)) : cosecha,
@@ -209,9 +210,8 @@ export const mockRepositories: Repositories = {
   },
   proyecciones: {
     async guardar(input) {
-      const projectionId = projectionKey(input, input.tipo)
-      if (projections.has(projectionId)) throw new ApiError("La proyección ya fue registrada.", 409)
-      projections.set(projectionId, input)
+      // Registrar de nuevo reemplaza la proyección anterior (edición).
+      projections.set(projectionKey(input, input.tipo), input)
       return { registros: input.registros.length }
     },
     async getCosecha(q) {
@@ -225,7 +225,7 @@ export const mockRepositories: Repositories = {
       await delay()
       return FRUTAS.flatMap(({ id, nombre }) => {
         const saved = projections.get(projectionKey({ ...q, frutaId: id }, "COMERCIAL"))
-        return saved ? saved.registros.map((r, i) => ({ frutaId: id, fruta: nombre, clienteId: i + 1, cliente: r.cliente!, jabas: r.jabas })) : comercialMock(q.plantaId, id)
+        return saved ? saved.registros.map((r, i) => ({ frutaId: id, fruta: nombre, clienteId: i + 1, cliente: r.cliente!, pais: r.pais, jabas: r.jabas })) : comercialMock(q.plantaId, id)
       })
     },
     async importar({ archivo }) {

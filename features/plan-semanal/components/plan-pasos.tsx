@@ -29,10 +29,10 @@ export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, pl
       listo: cosechaLista,
     },
     {
-      titulo: "Ver planificación",
+      titulo: "Planificación generada",
       detalle: planCreado
         ? "Revisa el plan generado antes de enviarlo a aprobación"
-        : "Completa las proyecciones para generar y revisar el plan",
+        : "Se genera sola al completar los pasos 2 y 3",
       listo: planCreado,
     },
   ]
@@ -53,7 +53,11 @@ export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, pl
                 <span aria-hidden className={cn("h-0.5 flex-1 rounded-full", paso.listo ? "bg-primary" : "bg-border")} />
               )}
             </div>
-            <p className="mt-2 pr-2 text-sm font-medium leading-tight">{paso.titulo}</p>
+            <p className="mt-2 pr-2 text-sm font-medium leading-tight">
+              {i === pasos.length - 1 && paso.listo
+                ? <a href="#planificacion-generada" className="underline-offset-4 hover:underline">{paso.titulo}</a>
+                : paso.titulo}
+            </p>
             <p className="mt-0.5 hidden pr-3 text-xs text-muted-foreground lg:block">{paso.detalle}</p>
           </li>
         ))}

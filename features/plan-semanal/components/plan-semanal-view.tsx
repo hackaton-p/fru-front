@@ -9,8 +9,8 @@ import { PlanHeader } from "./plan-header"
 import { PlanOficialSection } from "./plan-oficial-section"
 import { PlanPasos } from "./plan-pasos"
 import { ProgramaComercialCard, ProyeccionCosechaCard } from "./proyecciones-cards"
-import { CreateOfficialPlan } from "./create-official-plan"
-import { planEditable } from "../lib/plan-comparator"
+import { AutoGenerarPlan } from "./auto-generar-plan"
+import { EnviarAprobacionBar } from "./enviar-aprobacion-bar"
 import { PlanningPeriod } from "./planning-period"
 import { DiscardPlanButton } from "./discard-plan-button"
 import { planningDates } from "@/lib/dates"
@@ -42,6 +42,13 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
         comercialLista={comercialLista}
         planCreado={plan !== null}
       />
+      {proyeccionesListas ? (
+        <AlertaPlanificacion
+          cosechaJabas={cosecha.reduce((s, c) => s + c.jabas, 0)}
+          comercialJabas={comercial.reduce((s, c) => s + c.jabas, 0)}
+        />
+      ) : null}
+
       {erroresCarga.length > 0 ? (
         <Alert variant="destructive">
           <TriangleAlert aria-hidden />
@@ -101,20 +108,15 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
         </Alert>
       ) : null}
 
-      {proyeccionesListas ? (
-        <AlertaPlanificacion
-          cosechaJabas={cosecha.reduce((s, c) => s + c.jabas, 0)}
-          comercialJabas={comercial.reduce((s, c) => s + c.jabas, 0)}
-        />
-      ) : null}
-
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <ProgramaComercialCard comercial={comercial} query={query} frutas={frutas} canImport={canGestionar} />
-        <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} />
+        <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} planId={plan?.id} />
       </div>
 
-      {canGestionar && planEditable(plan) ? <CreateOfficialPlan key={`${query.inicio}-${query.cantidadDias}`} query={query} planId={plan?.id} enabled={proyeccionesListas && configuracionLista && erroresCarga.length === 0} /> : null}
-      {plan ? <PlanOficialSection plan={plan} defaults={defaults} canEnviar={can(user.rol, "plan:gestionar") && plan.estado === "BORRADOR"} /> : null}
+      {plan
+        ? <PlanOficialSection plan={plan} defaults={defaults} />
+        : canGestionar ? <AutoGenerarPlan query={query} listo={proyeccionesListas && configuracionLista && erroresCarga.length === 0} /> : null}
+      {can(user.rol, "plan:gestionar") ? <EnviarAprobacionBar planId={plan?.id ?? null} estado={plan?.estado ?? null} /> : null}
     </>
   )
 }
