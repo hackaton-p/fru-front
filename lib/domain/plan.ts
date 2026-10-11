@@ -79,6 +79,7 @@ export interface Plan extends PlanCalculado {
   estado: EstadoPlan
   updatedAt: string
   fechaEnvio?: string | null
+  fechaAprobacion?: string | null
   comentarioAprobacion?: string | null
 }
 

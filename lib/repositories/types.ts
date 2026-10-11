@@ -1,5 +1,7 @@
 import type {
   CalcularPlanInput,
+  CursoSemana,
+  EstadoPlan,
   Fruta,
   ImportarProyeccionInput,
   ImportarProyeccionResultado,
@@ -18,6 +20,7 @@ import type {
  */
 
 export interface PlantasRepository {
+  listar(): Promise<Planta[]>
   getById(id: number): Promise<Planta>
 }
 
@@ -31,7 +34,15 @@ export interface ProyeccionesRepository {
   importar(input: ImportarProyeccionInput): Promise<ImportarProyeccionResultado>
 }
 
+export interface PlanesFiltro {
+  estado?: EstadoPlan
+  plantaId?: number
+}
+
 export interface PlanesRepository {
+  /** Planes de todas las semanas, del más reciente al más antiguo. */
+  listar(filtro?: PlanesFiltro): Promise<Plan[]>
+  getById(id: number): Promise<Plan>
   /** Plan vigente (el más reciente) de la planta, fruta y semana, o null. */
   getVigente(query: SemanaQuery): Promise<Plan | null>
   /** Calcula un plan sin guardarlo. */
@@ -40,6 +51,15 @@ export interface PlanesRepository {
   aplicar(input: CalcularPlanInput): Promise<Plan>
   /** BORRADOR → PENDIENTE. */
   enviar(planId: number): Promise<Plan>
+  /** PENDIENTE → APROBADO. */
+  aprobar(planId: number): Promise<Plan>
+  /** PENDIENTE → RECHAZADO; el comentario es obligatorio. */
+  rechazar(planId: number, comentario: string): Promise<Plan>
+}
+
+export interface CursoRepository {
+  /** Proyectado vs ejecutado de la semana, o null si aún no hay jornadas. */
+  getSemana(query: SemanaQuery): Promise<CursoSemana | null>
 }
 
 export interface Repositories {
@@ -47,4 +67,5 @@ export interface Repositories {
   frutas: FrutasRepository
   proyecciones: ProyeccionesRepository
   planes: PlanesRepository
+  curso: CursoRepository
 }

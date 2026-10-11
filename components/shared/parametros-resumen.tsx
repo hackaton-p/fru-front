@@ -21,7 +21,10 @@ export function ParametrosResumen({ valores, defaults }: ParametrosResumenProps)
         const cambiado = distintos.includes(def.key)
         return (
           <li key={def.key}>
-            <Badge variant={cambiado ? "default" : "outline"}>
+            <Badge
+              variant="outline"
+              className={cambiado ? "border-chart-2 bg-warning text-warning-foreground" : undefined}
+            >
               {def.shortLabel}: {def.format(valores[def.key])}
               {cambiado ? ` (default ${def.format(defaults[def.key])})` : null}
             </Badge>

@@ -70,5 +70,11 @@
   }
   html {
     @apply font-sans;
+    /* Superficies del navegador con la paleta de marca. */
+    scrollbar-color: var(--border) transparent;
+    caret-color: var(--primary);
+  }
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 25%, transparent);
   }
 }
