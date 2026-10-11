@@ -11,6 +11,7 @@ import type {
   Jornada,
   JornadaDelDia,
   RegistroInput,
+  ParametrosPlanta,
   Plan,
   PlanCalculado,
   Planta,
@@ -28,6 +29,8 @@ import type {
 export interface PlantasRepository {
   listar(): Promise<Planta[]>
   getById(id: number): Promise<Planta>
+  /** Cambia los valores por defecto. Los planes ya guardados conservan sus `parametrosUsados`. */
+  actualizar(id: number, parametros: ParametrosPlanta): Promise<Planta>
 }
 
 export interface FrutasRepository {
