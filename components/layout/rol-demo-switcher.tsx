@@ -1,7 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
-import { ChevronDown, UserRound } from "lucide-react"
+import { UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -29,14 +29,14 @@ export function RolDemoSwitcher({ user }: { user: Usuario }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={isPending} aria-label={`Ver como: ${ROL_LABEL[user.rol]}`}>
-          {isPending ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <UserRound data-icon="inline-start" aria-hidden />
-          )}
-          <span className="hidden sm:inline">{ROL_LABEL[user.rol]}</span>
-          <ChevronDown data-icon="inline-end" aria-hidden />
+        <Button
+          variant="outline"
+          size="icon-lg"
+          className="rounded-full"
+          disabled={isPending}
+          aria-label={`Perfil de ${user.nombre}`}
+        >
+          {isPending ? <Spinner /> : <UserRound aria-hidden />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
