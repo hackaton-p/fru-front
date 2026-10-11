@@ -15,6 +15,7 @@ import type {
   ParametrosPlanta,
   Plan,
   PlanCalculado,
+  PlanEnEjecucion,
   Planta,
   ProyeccionCosechaDia,
   ProyeccionComercialCliente,
@@ -80,6 +81,8 @@ export interface JornadasRepository {
    * o en ejecución (o el último cerrado, si ya terminó la semana). null si no hay.
    */
   getActual(plantaId: number): Promise<JornadaDelDia | null>
+  /** Planes aprobados, en ejecución o cerrados de la planta (semana más reciente primero). */
+  listarPlanes(plantaId: number): Promise<PlanEnEjecucion[]>
   /** Abre la jornada con lo que llegó e inicia por área. */
   iniciar(input: IniciarJornadaInput): Promise<Jornada>
   /** Avance, cambio de personal o cambio de volumen; recalcula el estimado. */

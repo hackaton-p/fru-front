@@ -1,4 +1,4 @@
-import { AREAS, type AreaCodigo, type CursoDia, type CursoSemana, type PersonalPorArea } from "@/lib/domain"
+import { AREAS, type CursoDia, type CursoSemana, type PersonalPorArea } from "@/lib/domain"
 import { formatDecimal, formatInt, formatPercent } from "@/lib/format"
 
 /*
@@ -93,7 +93,7 @@ const horasTxt = (h: number) => `${formatDecimal(h)} h`
 
 /**
  * "Lectura de la semana": hallazgos calculados con los datos, en el orden
- * personal → horas, rendimiento y descarte.
+ * personal → horas y rendimiento.
  */
 export function lecturaSemana(
   curso: CursoSemana,
@@ -103,10 +103,11 @@ export function lecturaSemana(
   const { cerrados } = resumen
   const lectura: string[] = []
 
-  const proyectado = curso.dias.map((d) => totalPersonal(d.personalProyectado))
-  const ejecutado = curso.dias.map((d) => totalPersonal(d.personalEjecutado))
+  // Solo los días cerrados: los que siguen en curso o pendientes aún no tienen personal ejecutado.
+  const proyectado = cerrados.map((d) => totalPersonal(d.personalProyectado))
+  const ejecutado = cerrados.map((d) => totalPersonal(d.personalEjecutado))
   const faltaPacking = avg(
-    curso.dias.map((d) => d.personalProyectado.PACKING - d.personalEjecutado.PACKING),
+    cerrados.map((d) => d.personalProyectado.PACKING - d.personalEjecutado.PACKING),
   )
   const horasSuben = cerrados.every((d, i) => i === 0 || d.horas >= cerrados[i - 1].horas)
   let personal =
@@ -132,17 +133,6 @@ export function lecturaSemana(
         : "."),
   )
 
-  const primero = cerrados[0].descarte
-  const ultimo = resumen.descarteUltimo
-  if (cerrados.length > 1 && ultimo !== primero) {
-    const verbo = ultimo > primero ? "subió" : "bajó"
-    lectura.push(
-      `El descarte ${verbo} de ${formatPercent(primero)} a ${formatPercent(ultimo)} a lo largo de la semana.`,
-    )
-  } else {
-    lectura.push(`El descarte se mantuvo en ${formatPercent(ultimo)}.`)
-  }
-
   return lectura
 }
 
@@ -167,14 +157,6 @@ export type FilaCurso =
       anidada?: boolean
     }
 
-const AREA_LABEL: Record<AreaCodigo, string> = {
-  PACKING: "Packing",
-  ALMACEN: "Almacén",
-  TRAZABILIDAD: "Trazabilidad",
-  MANTENIMIENTO: "Mantenimiento",
-  SANEAMIENTO: "Saneamiento",
-}
-
 const EN_CURSO = "en curso"
 const SIN_DATO = "—"
 
@@ -192,40 +174,6 @@ export function filasCurso(curso: CursoSemana, resumen: ResumenCurso): FilaCurso
         ? { valor: valor(d), bajo: opts.bajo?.(d) }
         : { valor: opts.abierto ?? SIN_DATO },
     )
-
-  const personal = (fuente: "personalProyectado" | "personalEjecutado"): FilaCurso[] => [
-    ...AREAS.map(
-      (area): FilaCurso => ({
-        tipo: "dato",
-        label: AREA_LABEL[area],
-        anidada: true,
-        dias: dias.map((d) => ({
-          valor: formatInt(d[fuente][area]),
-          bajo: fuente === "personalEjecutado" && d.personalEjecutado[area] < d.personalProyectado[area],
-        })),
-        semana: { valor: SIN_DATO },
-      }),
-    ),
-    {
-      tipo: "dato",
-      label: fuente === "personalProyectado" ? "Total proyectado" : "Total ejecutado",
-      anidada: true,
-      destacada: true,
-      dias: dias.map((d) => ({
-        valor: formatInt(totalPersonal(d[fuente])),
-        bajo:
-          fuente === "personalEjecutado" &&
-          totalPersonal(d.personalEjecutado) < totalPersonal(d.personalProyectado),
-      })),
-      semana: {
-        valor: formatInt(sum(dias.map((d) => totalPersonal(d[fuente])))),
-        bajo:
-          fuente === "personalEjecutado" &&
-          sum(dias.map((d) => totalPersonal(d.personalEjecutado))) <
-            sum(dias.map((d) => totalPersonal(d.personalProyectado))),
-      },
-    },
-  ]
 
   const bajoMeta = (d: DiaCerrado) => d.jabasEjecutadas < d.jabasProyectadas
   const semanaBaja = r.jabasEjecutadas < r.jabasProyectadasCerradas
@@ -253,18 +201,6 @@ export function filasCurso(curso: CursoSemana, resumen: ResumenCurso): FilaCurso
     },
     {
       tipo: "dato",
-      label: "% peso loose",
-      dias: porDia((d) => formatPercent(d.pesoLoose)),
-      semana: { valor: formatPercent(avg(r.cerrados.map((d) => d.pesoLoose))) },
-    },
-    {
-      tipo: "dato",
-      label: "% peso fijo",
-      dias: porDia((d) => formatPercent(1 - d.pesoLoose)),
-      semana: { valor: formatPercent(1 - avg(r.cerrados.map((d) => d.pesoLoose))) },
-    },
-    {
-      tipo: "dato",
       label: "Rendimiento (jabas por persona-hora)",
       destacada: true,
       dias: porDia((d) => formatDecimal(rendimientoDia(d))),
@@ -272,25 +208,19 @@ export function filasCurso(curso: CursoSemana, resumen: ResumenCurso): FilaCurso
     },
     {
       tipo: "dato",
-      label: "% descarte",
-      dias: porDia((d) => formatPercent(d.descarte)),
-      semana: { valor: formatPercent(r.descartePromedio) },
-    },
-    { tipo: "seccion", label: "Personal proyectado" },
-    ...personal("personalProyectado"),
-    { tipo: "seccion", label: "Personal ejecutado" },
-    ...personal("personalEjecutado"),
-    {
-      tipo: "dato",
-      label: "Ingresos",
-      dias: dias.map((d) => ({ valor: formatInt(d.ingresos) })),
-      semana: { valor: formatInt(sum(dias.map((d) => d.ingresos))) },
+      label: "Personal proyectado",
+      dias: dias.map((d) => ({ valor: formatInt(totalPersonal(d.personalProyectado)) })),
+      semana: { valor: formatInt(sum(dias.map((d) => totalPersonal(d.personalProyectado)))) },
     },
     {
+      // Solo con la jornada cerrada; la semana suma los días cerrados.
       tipo: "dato",
-      label: "Ausentismo",
-      dias: dias.map((d) => ({ valor: formatPercent(d.ausentismo) })),
-      semana: { valor: formatPercent(avg(dias.map((d) => d.ausentismo))) },
+      label: "Personal ejecutado",
+      dias: porDia((d) => formatInt(totalPersonal(d.personalEjecutado)), {
+        bajo: (d) => totalPersonal(d.personalEjecutado) < totalPersonal(d.personalProyectado),
+        abierto: EN_CURSO,
+      }),
+      semana: { valor: formatInt(r.personalEjecutado), bajo: r.personalEjecutado < r.personalProyectado },
     },
     {
       tipo: "dato",

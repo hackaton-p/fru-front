@@ -67,6 +67,7 @@ export async function getPlanDetalleData(id: number, user: Usuario): Promise<Pla
 }
 
 const cursoParamsSchema = z.object({
+  plan: z.coerce.number().int().positive().optional().catch(undefined),
   planta: z.coerce.number().int().positive().optional().catch(undefined),
   semana: z.coerce.number().int().min(1).max(53).optional().catch(undefined),
 })
@@ -81,8 +82,8 @@ export interface CursoData {
 }
 
 /**
- * Curso de la semana. Por defecto muestra la semana en ejecución de la planta
- * (o la semana actual si no hay ninguna).
+ * Curso de la semana. Con `?plan=` es el curso de ese plan (su planta, fruta y
+ * semana); si no, la semana en ejecución de la planta (o la semana actual).
  */
 export async function getCursoData(
   searchParams: Record<string, string | string[] | undefined>,
@@ -94,15 +95,20 @@ export async function getCursoData(
     listarPlantasVisibles(user.plantaId),
     listarPlanesVisibles(user.plantaId),
   ])
-  const planta = plantas.find((p) => p.id === (user.plantaId ?? sp.planta)) ?? plantas[0]
+  const elegido = sp.plan ? planes.find((p) => p.id === sp.plan) : undefined
+  if (sp.plan && !elegido) notFound()
+
+  const plantaId = elegido?.plantaId ?? user.plantaId ?? sp.planta
+  const planta = plantas.find((p) => p.id === plantaId) ?? plantas[0]
   if (!planta) notFound()
 
-  const enEjecucion = planes.find((p) => p.plantaId === planta.id && p.estado === "EN_EJECUCION")
+  const plan =
+    elegido ?? planes.find((p) => p.plantaId === planta.id && p.estado === "EN_EJECUCION")
   const query: SemanaQuery = {
     plantaId: planta.id,
-    frutaId: enEjecucion?.frutaId ?? FRUTA_POR_DEFECTO,
-    anio: enEjecucion?.anio ?? isoWeek(hoy).year,
-    semana: sp.semana ?? enEjecucion?.semana ?? isoWeek(hoy).week,
+    frutaId: plan?.frutaId ?? FRUTA_POR_DEFECTO,
+    anio: plan?.anio ?? isoWeek(hoy).year,
+    semana: elegido?.semana ?? sp.semana ?? plan?.semana ?? isoWeek(hoy).week,
   }
   const curso = await getRepositories().curso.getSemana(query)
 

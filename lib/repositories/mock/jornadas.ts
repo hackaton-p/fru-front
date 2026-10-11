@@ -1,5 +1,13 @@
 import { ApiError } from "@/lib/api/errors"
-import type { Jornada, JornadaArea, Plan, PlanDia, RegistroAvance } from "@/lib/domain"
+import {
+  repartirPorArea,
+  type EjecucionDia,
+  type Jornada,
+  type JornadaArea,
+  type Plan,
+  type PlanDia,
+  type RegistroAvance,
+} from "@/lib/domain"
 import { formatInt } from "@/lib/format"
 import type { JornadasRepository } from "../types"
 import { cursoMock } from "./curso-data"
@@ -137,6 +145,31 @@ export function crearJornadasMock(
       return { plan, dia: diaDe(plan, ultima.fecha), jornada: ultima }
     },
 
+    async listarPlanes(plantaId) {
+      await delay()
+      return [...planes.values()]
+        .filter(
+          (p) =>
+            p.plantaId === plantaId &&
+            (p.estado === "APROBADO" || p.estado === "EN_EJECUCION" || p.estado === "CERRADO"),
+        )
+        .sort((a, b) => b.anio - a.anio || b.semana - a.semana)
+        .map((plan) => ({
+          plan,
+          ejecucion: Object.fromEntries(
+            plan.dias.map((d) => {
+              const jornada = store.jornadas.get(keyJornada(plan.id, d.fecha))
+              const estado: EjecucionDia = jornada
+                ? jornada.estado
+                : diaCerrado(plan, d.fecha)
+                  ? "CERRADA"
+                  : "PENDIENTE"
+              return [d.fecha, estado]
+            }),
+          ),
+        }))
+    },
+
     async iniciar(input) {
       await delay()
       const plan = planDe(input.planId)
@@ -148,23 +181,20 @@ export function crearJornadasMock(
         throw new ApiError("La jornada de este día ya se inició.", 409)
       }
       const dia = actual.dia
-      const areas: JornadaArea[] = dia.areas.map((a) => {
-        const dato = input.areas.find((x) => x.area === a.area)
-        const llegaron = dato?.llegaron ?? 0
-        const inician = dato?.inician ?? 0
-        if (inician > llegaron) {
-          throw new ApiError(`En ${AREA_LABEL[a.area]} inician más personas de las que llegaron.`, 400)
-        }
-        return {
-          area: a.area,
-          trabajadoresPlan: a.trabajadoresPlan,
-          trabajadoresLlegaron: llegaron,
-          trabajadoresInicio: inician,
-          trabajadoresPresentes: inician,
-        }
-      })
-      const inicio = sum(areas.map((a) => a.trabajadoresInicio))
-      if (inicio < 1) throw new ApiError("Indica con cuántas personas inicias.", 400)
+      if (!Number.isInteger(input.trabajadores) || input.trabajadores < 1) {
+        throw new ApiError("Indica con cuántas personas inicias.", 400)
+      }
+      if (!(input.jabasDia > 0)) throw new ApiError("Indica las toneladas que tienes.", 400)
+      // Llegaron = inician: el total se reparte por área en proporción al plan.
+      const reparto = repartirPorArea(dia.areas, input.trabajadores)
+      const areas: JornadaArea[] = dia.areas.map((a, i) => ({
+        area: a.area,
+        trabajadoresPlan: a.trabajadoresPlan,
+        trabajadoresLlegaron: reparto[i].trabajadores,
+        trabajadoresInicio: reparto[i].trabajadores,
+        trabajadoresPresentes: reparto[i].trabajadores,
+      }))
+      const inicio = input.trabajadores
 
       const p = plan.parametrosUsados
       store.ultimoId += 1
@@ -184,6 +214,14 @@ export function crearJornadasMock(
         plan,
       )
       if (plan.estado === "APROBADO") guardarPlan({ ...plan, estado: "EN_EJECUCION" })
+      // Si la fruta que tiene no es la meta, queda como cambio de volumen al inicio.
+      if (input.jabasDia !== dia.jabasMeta) {
+        return repo.registrar(jornada.id, {
+          tipo: "VOLUMEN",
+          hora: hhmm(jornada.horaInicio),
+          jabasEsperadasDia: input.jabasDia,
+        })
+      }
       return jornada
     },
 

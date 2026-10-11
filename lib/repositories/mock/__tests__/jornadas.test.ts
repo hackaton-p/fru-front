@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { ParametrosPlanta, Plan } from "@/lib/domain"
+import { repartirPorArea, type ParametrosPlanta, type Plan } from "@/lib/domain"
 import { cursoMock } from "../curso-data"
 import { estimar, horaDeJornada, horasEntre } from "../jornada-calculator"
 import { crearJornadasMock } from "../jornadas"
@@ -79,16 +79,16 @@ describe("jornadas mock (flujo del jefe de turno)", () => {
   it("inicia, registra, ajusta y cierra; el último día cierra el plan", async () => {
     const { repo, planes, reiniciarDemo, cerradaDe } = nuevo()
     const { plan, dia } = (await repo.getActual(1))!
-    const areas = dia.areas.map((a) => ({ area: a.area, llegaron: a.trabajadoresPlan, inician: a.trabajadoresPlan }))
-    areas[0] = { ...areas[0], inician: areas[0].llegaron - 20 }
+    const inicio = { planId: plan.id, fecha: dia.fecha, trabajadores: dia.trabajadores - 20, jabasDia: dia.jabasMeta }
+    const reparto = repartirPorArea(dia.areas, inicio.trabajadores)
 
-    const jornada = await repo.iniciar({ planId: plan.id, fecha: dia.fecha, areas })
+    const jornada = await repo.iniciar(inicio)
     expect(jornada.estado).toBe("ABIERTA")
     expect(jornada.horaInicio).toBe("2026-10-09T17:00")
+    expect(jornada.registros).toHaveLength(0)
+    expect(jornada.areas.reduce((s, a) => s + a.trabajadoresInicio, 0)).toBe(inicio.trabajadores)
 
-    await expect(
-      repo.iniciar({ planId: plan.id, fecha: dia.fecha, areas }),
-    ).rejects.toThrow("ya se inició")
+    await expect(repo.iniciar(inicio)).rejects.toThrow("ya se inició")
 
     const conAvance = await repo.registrar(jornada.id, {
       tipo: "AVANCE",
@@ -131,9 +131,9 @@ describe("jornadas mock (flujo del jefe de turno)", () => {
     const viernes = curso.dias.find((d) => d.fecha === dia.fecha)!
     expect(viernes.jabasEjecutadas).toBe(12_800)
     expect(viernes.personalProyectado.PACKING).toBe(dia.areas[0].trabajadoresPlan)
-    expect(viernes.personalEjecutado.PACKING).toBe(areas[0].inician)
-    // Llegaron todos los del plan: no hay ausentismo, aunque 20 no iniciaron.
-    expect(viernes.ausentismo).toBe(0)
+    expect(viernes.personalEjecutado.PACKING).toBe(reparto[0].trabajadores)
+    // Iniciaron 20 menos que el plan: cuentan como ausentes.
+    expect(viernes.ausentismo).toBeCloseTo(20 / dia.trabajadores, 5)
 
     // Con la semana terminada, se sigue mostrando el resultado del día.
     expect((await repo.getActual(1))?.jornada?.estado).toBe("CERRADA")
@@ -144,12 +144,40 @@ describe("jornadas mock (flujo del jefe de turno)", () => {
     expect(reiniciado?.plan.estado).toBe("EN_EJECUCION")
   })
 
-  it("no deja iniciar con más personas de las que llegaron", async () => {
+  it("las toneladas distintas a la meta quedan como cambio de volumen al inicio", async () => {
     const { repo } = nuevo()
     const { plan, dia } = (await repo.getActual(1))!
-    const areas = dia.areas.map((a) => ({ area: a.area, llegaron: 5, inician: 6 }))
-    await expect(repo.iniciar({ planId: plan.id, fecha: dia.fecha, areas })).rejects.toThrow(
-      "inician más personas de las que llegaron",
+    const jornada = await repo.iniciar({
+      planId: plan.id,
+      fecha: dia.fecha,
+      trabajadores: dia.trabajadores,
+      jabasDia: dia.jabasMeta + 1_000,
+    })
+    expect(jornada.registros).toHaveLength(1)
+    expect(jornada.registros[0]).toMatchObject({ tipo: "VOLUMEN", hora: "2026-10-09T17:00" })
+    expect(jornada.estimacion.volumenDia).toBe(dia.jabasMeta + 1_000)
+  })
+
+  it("no deja iniciar sin trabajadores", async () => {
+    const { repo } = nuevo()
+    const { plan, dia } = (await repo.getActual(1))!
+    await expect(
+      repo.iniciar({ planId: plan.id, fecha: dia.fecha, trabajadores: 0, jabasDia: dia.jabasMeta }),
+    ).rejects.toThrow("con cuántas personas inicias")
+  })
+})
+
+describe("repartirPorArea", () => {
+  it("reparte en proporción al plan y suma el total", () => {
+    const reparto = repartirPorArea(
+      [
+        { area: "PACKING", trabajadoresPlan: 200 },
+        { area: "ALMACEN", trabajadoresPlan: 50 },
+        { area: "SANEAMIENTO", trabajadoresPlan: 26 },
+      ],
+      256,
     )
+    expect(reparto.reduce((s, a) => s + a.trabajadores, 0)).toBe(256)
+    expect(reparto[0].trabajadores).toBe(186)
   })
 })

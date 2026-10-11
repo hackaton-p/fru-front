@@ -12,12 +12,12 @@ import type { CerrarJornadaInput } from "@/lib/domain"
 import { formatHoras, formatInt } from "@/lib/format"
 import { cerrarJornadaAction } from "../actions"
 
-const CAMPOS: { key: keyof CerrarJornadaInput; label: string; step: number }[] = [
+/** Por ahora el cierre solo pide horas y jabas; descarte y kg van en 0. */
+type CampoCierre = "horasTrabajadas" | "jabasProcesadas"
+
+const CAMPOS: { key: CampoCierre; label: string; step: number }[] = [
   { key: "horasTrabajadas", label: "Horas trabajadas", step: 0.1 },
   { key: "jabasProcesadas", label: "Jabas procesadas", step: 1 },
-  { key: "jabasDescarte", label: "Jabas de descarte", step: 1 },
-  { key: "kgLoose", label: "Kg loose", step: 1 },
-  { key: "kgFijo", label: "Kg fijo", step: 1 },
 ]
 
 interface CerrarJornadaFormProps {
@@ -27,29 +27,26 @@ interface CerrarJornadaFormProps {
   jabasSugeridas: number
 }
 
-type Valores = Record<keyof CerrarJornadaInput, string>
+type Valores = Record<CampoCierre, string>
 
 /** Cierre: cifras reales del día, con confirmación antes de cerrar. */
 export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas }: CerrarJornadaFormProps) {
   const [valores, setValores] = useState<Valores>({
     horasTrabajadas: String(Math.round(horasSugeridas * 10) / 10),
     jabasProcesadas: String(Math.round(jabasSugeridas)),
-    jabasDescarte: "",
-    kgLoose: "",
-    kgFijo: "",
   })
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const num = (key: keyof CerrarJornadaInput) =>
+  const num = (key: CampoCierre) =>
     valores[key].trim() === "" ? Number.NaN : Number(valores[key])
   const datos: CerrarJornadaInput = {
     horasTrabajadas: num("horasTrabajadas"),
     jabasProcesadas: num("jabasProcesadas"),
-    jabasDescarte: num("jabasDescarte"),
-    kgLoose: num("kgLoose"),
-    kgFijo: num("kgFijo"),
+    jabasDescarte: 0,
+    kgLoose: 0,
+    kgFijo: 0,
   }
   const faltante = CAMPOS.find((c) => !Number.isFinite(datos[c.key]))
 
@@ -86,7 +83,7 @@ export function CerrarJornadaForm({ jornadaId, horasSugeridas, jabasSugeridas }:
       </CardHeader>
       <CardContent>
         <form onSubmit={pedirConfirmacion} className="flex flex-col gap-5" noValidate>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-2xl">
             {CAMPOS.map((c) => (
               <Field key={c.key}>
                 <FieldLabel htmlFor={`cierre-${c.key}`}>{c.label}</FieldLabel>

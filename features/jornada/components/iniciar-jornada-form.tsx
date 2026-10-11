@@ -3,21 +3,12 @@
 import { useState, useTransition } from "react"
 import { Play } from "lucide-react"
 import { toast } from "sonner"
-import { AREA_LABEL } from "@/components/shared/areas"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import type { AreaCodigo, ParametrosPlanta } from "@/lib/domain"
+import { jabasATon, KG_POR_JABA, tonAJabas, type ParametrosPlanta } from "@/lib/domain"
 import { formatDecimal, formatHoras, formatInt } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { iniciarJornadaAction } from "../actions"
@@ -36,18 +27,17 @@ interface IniciarJornadaFormProps {
   meta: number
   /** Horas del plan para el día. */
   horasPlan: number
+  /** Trabajadores del plan para el día. */
+  trabajadoresPlan: number
   horaInicio: string
   parametros: ParametrosPlanta
-  areas: { area: AreaCodigo; plan: number }[]
   plantaNombre: string
 }
 
-type Valores = Record<AreaCodigo, { llegaron: string; inician: string }>
-
-/** Entero no negativo de un input (vacío o inválido cuenta como 0). */
-function aEntero(valor: string): number {
+/** Número no negativo de un input (vacío o inválido cuenta como 0). */
+function aNumero(valor: string): number {
   const n = Number(valor)
-  return valor.trim() === "" || !Number.isFinite(n) ? 0 : Math.max(0, Math.floor(n))
+  return valor.trim() === "" || !Number.isFinite(n) ? 0 : Math.max(0, n)
 }
 
 function signo(n: number) {
@@ -62,46 +52,32 @@ function mensajeEstado(estado: EstadoHoras, horas: number, horasPlan: number, p:
   return `Riesgo de turno extra: pasas las ${formatInt(p.horasJornada + p.horasExtraMax)} h de jornada más horas extra.`
 }
 
-const NUMERO = "h-12 w-16 text-right text-lg tabular-nums sm:w-24 md:text-lg"
+const NUMERO = "h-14 text-right text-2xl font-semibold tabular-nums md:text-2xl"
 
-/** Etapa 1: cuántos llegaron y con cuántos inicia cada área, con el estimado en vivo. */
+/** Etapa 1: toneladas que se tienen y trabajadores con los que se inicia, con el estimado en vivo. */
 export function IniciarJornadaForm(props: IniciarJornadaFormProps) {
-  const { planId, fecha, meta, horasPlan, horaInicio, parametros: p, areas } = props
-  const [valores, setValores] = useState<Valores>(
-    () =>
-      Object.fromEntries(
-        areas.map((a) => [a.area, { llegaron: String(a.plan), inician: String(a.plan) }]),
-      ) as Valores,
-  )
+  const { planId, fecha, meta, horasPlan, trabajadoresPlan, horaInicio, parametros: p } = props
+  // Valor propuesto en el input (con un decimal, sin separador de miles).
+  const tonPropuestas = String(Math.round(jabasATon(meta) * 10) / 10)
+  const [toneladas, setToneladas] = useState(tonPropuestas)
+  const [trabajadoresTxt, setTrabajadoresTxt] = useState(String(trabajadoresPlan))
   const [isPending, startTransition] = useTransition()
 
-  const filas = areas.map((a) => {
-    const llegaron = aEntero(valores[a.area].llegaron)
-    const inician = aEntero(valores[a.area].inician)
-    return { ...a, llegaron, inician, error: inician > llegaron }
-  })
-  const totalPlan = filas.reduce((s, f) => s + f.plan, 0)
-  const totalLlegaron = filas.reduce((s, f) => s + f.llegaron, 0)
-  const totalInician = filas.reduce((s, f) => s + f.inician, 0)
-  const hayError = filas.some((f) => f.error)
-  const enEspera = totalLlegaron - totalInician
+  // Sin cambiar las toneladas propuestas, el volumen es exactamente la meta.
+  const jabasDia = toneladas === tonPropuestas ? meta : tonAJabas(aNumero(toneladas))
+  const totalInician = Math.floor(aNumero(trabajadoresTxt))
+  const sinFruta = jabasDia < 1
+  const difJabas = jabasDia - meta
 
-  const horas = horasConTrabajadores(meta, totalInician, p)
-  const hayEstimado = Number.isFinite(horas)
+  const horas = horasConTrabajadores(jabasDia, totalInician, p)
+  const hayEstimado = Number.isFinite(horas) && !sinFruta
   const estado = hayEstimado ? clasificarHoras(horas, horasPlan, p) : null
   const ui = estado ? ESTADO_HORAS_UI[estado] : null
-  const necesarios = trabajadoresParaHoras(meta, p.horasJornada, p)
-
-  const cambiar = (area: AreaCodigo, campo: "llegaron" | "inician", valor: string) =>
-    setValores((v) => ({ ...v, [area]: { ...v[area], [campo]: valor } }))
+  const necesarios = trabajadoresParaHoras(jabasDia, p.horasJornada, p)
 
   const iniciar = () => {
     startTransition(async () => {
-      const res = await iniciarJornadaAction({
-        planId,
-        fecha,
-        areas: filas.map((f) => ({ area: f.area, llegaron: f.llegaron, inician: f.inician })),
-      })
+      const res = await iniciarJornadaAction({ planId, fecha, trabajadores: totalInician, jabasDia })
       if (res.ok) toast.success(`Jornada iniciada con ${formatInt(totalInician)} trabajadores`)
       else toast.error("No se pudo iniciar la jornada", { description: res.error })
     })
@@ -113,123 +89,74 @@ export function IniciarJornadaForm(props: IniciarJornadaFormProps) {
         <CardHeader>
           <CardTitle className="font-heading text-xl">Iniciar jornada</CardTitle>
           <CardDescription className="max-w-prose text-pretty">
-            Registra cuántas personas llegaron y con cuántas arrancas en cada área. El tiempo
-            estimado se actualiza mientras escribes.
+            Indica la fruta que tienes y con cuántas personas arrancas. El tiempo estimado se
+            actualiza mientras escribes.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Área</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">Plan</TableHead>
-                <TableHead className="text-right">Llegaron</TableHead>
-                <TableHead className="text-right">Inician</TableHead>
-                <TableHead className="text-right">
-                  <span className="sm:hidden">Dif.</span>
-                  <span className="hidden sm:inline">Diferencia vs plan</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filas.map((f) => {
-                const dif = f.inician - f.plan
-                return (
-                  <TableRow key={f.area}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-base font-semibold">{AREA_LABEL[f.area]}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums sm:hidden">
-                          plan {formatInt(f.plan)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden text-right text-base tabular-nums sm:table-cell">
-                      {formatInt(f.plan)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <label htmlFor={`llegaron-${f.area}`} className="sr-only">
-                        Llegaron a {AREA_LABEL[f.area]}
-                      </label>
-                      <Input
-                        id={`llegaron-${f.area}`}
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        step={1}
-                        value={valores[f.area].llegaron}
-                        onChange={(e) => cambiar(f.area, "llegaron", e.target.value)}
-                        className={cn(NUMERO, "ml-auto")}
-                        disabled={isPending}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <label htmlFor={`inician-${f.area}`} className="sr-only">
-                        Inician en {AREA_LABEL[f.area]}
-                      </label>
-                      <Input
-                        id={`inician-${f.area}`}
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        step={1}
-                        value={valores[f.area].inician}
-                        onChange={(e) => cambiar(f.area, "inician", e.target.value)}
-                        aria-invalid={f.error || undefined}
-                        aria-describedby={f.error ? "inicio-error" : undefined}
-                        className={cn(NUMERO, "ml-auto")}
-                        disabled={isPending}
-                      />
-                    </TableCell>
-                    <TableCell
+        <CardContent>
+          <FieldGroup className="grid gap-6 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="inicio-toneladas">Toneladas que tienes</FieldLabel>
+              <Input
+                id="inicio-toneladas"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step={0.1}
+                value={toneladas}
+                onChange={(e) => setToneladas(e.target.value)}
+                aria-invalid={sinFruta || undefined}
+                className={NUMERO}
+                disabled={isPending}
+              />
+              {sinFruta ? (
+                <FieldError>Ingresa las toneladas que tienes.</FieldError>
+              ) : (
+                <FieldDescription className="tabular-nums">
+                  ≈ {formatInt(jabasDia)} jabas · meta {formatDecimal(jabasATon(meta))} t
+                  {difJabas !== 0 ? (
+                    <span className={cn("font-semibold", difJabas < 0 ? "text-destructive" : "text-foreground")}>
+                      {" "}
+                      ({signo(difJabas)} jabas)
+                    </span>
+                  ) : null}
+                </FieldDescription>
+              )}
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="inicio-trabajadores">Trabajadores con los que inicias</FieldLabel>
+              <Input
+                id="inicio-trabajadores"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                value={trabajadoresTxt}
+                onChange={(e) => setTrabajadoresTxt(e.target.value)}
+                aria-invalid={totalInician < 1 || undefined}
+                className={NUMERO}
+                disabled={isPending}
+              />
+              {totalInician < 1 ? (
+                <FieldError>Indica con cuántas personas inicias.</FieldError>
+              ) : (
+                <FieldDescription className="tabular-nums">
+                  plan {formatInt(trabajadoresPlan)}
+                  {totalInician !== trabajadoresPlan ? (
+                    <span
                       className={cn(
-                        "text-right text-base font-semibold tabular-nums",
-                        dif < 0 ? "text-destructive" : "text-success-foreground",
+                        "font-semibold",
+                        totalInician < trabajadoresPlan ? "text-destructive" : "text-success-foreground",
                       )}
                     >
-                      {signo(dif)}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-            <TableFooter>
-              <TableRow className="text-base">
-                <TableCell className="font-semibold">Total</TableCell>
-                <TableCell className="hidden text-right tabular-nums sm:table-cell">
-                  {formatInt(totalPlan)}
-                </TableCell>
-                <TableCell className="pr-4 text-right font-semibold tabular-nums">
-                  {formatInt(totalLlegaron)}
-                </TableCell>
-                <TableCell className="pr-4 text-right font-semibold tabular-nums">
-                  {formatInt(totalInician)}
-                </TableCell>
-                <TableCell
-                  className={cn(
-                    "text-right font-semibold tabular-nums",
-                    totalInician < totalPlan ? "text-destructive" : "text-success-foreground",
-                  )}
-                >
-                  {signo(totalInician - totalPlan)}
-                </TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
-
-          {hayError ? (
-            <p id="inicio-error" role="alert" className="text-sm font-medium text-destructive">
-              En alguna área inician más personas de las que llegaron. Corrige ese número.
-            </p>
-          ) : null}
-          {enEspera > 0 && !hayError ? (
-            <p className="text-sm text-muted-foreground">
-              {enEspera === 1
-                ? "1 persona llegó pero no inicia"
-                : `${formatInt(enEspera)} personas llegaron pero no inician`}{" "}
-              (en espera o reubicadas). Puedes sumarlas luego con un cambio de personal.
-            </p>
-          ) : null}
+                      {" "}
+                      ({signo(totalInician - trabajadoresPlan)})
+                    </span>
+                  ) : null}
+                </FieldDescription>
+              )}
+            </Field>
+          </FieldGroup>
         </CardContent>
       </Card>
 
@@ -285,7 +212,7 @@ export function IniciarJornadaForm(props: IniciarJornadaFormProps) {
               size="lg"
               className="h-12 w-full text-base"
               onClick={iniciar}
-              disabled={isPending || hayError || totalInician < 1}
+              disabled={isPending || sinFruta || totalInician < 1}
             >
               {isPending ? (
                 <Spinner data-icon="inline-start" />
@@ -297,9 +224,9 @@ export function IniciarJornadaForm(props: IniciarJornadaFormProps) {
           </CardContent>
         </Card>
         <p className="px-1 text-xs text-muted-foreground">
-          Estimado = jabas de la meta ÷ (trabajadores × {formatDecimal(p.rendimientoPersonaHora)}{" "}
+          Estimado = jabas del día ÷ (trabajadores × {formatDecimal(p.rendimientoPersonaHora)}{" "}
           jabas por persona-hora × {formatInt(p.factorEficiencia * 100)}% de eficiencia). Parámetros
-          del plan de Planta {props.plantaNombre}.
+          del plan de Planta {props.plantaNombre}. Una jaba ≈ {formatDecimal(KG_POR_JABA)} kg.
         </p>
       </aside>
     </div>

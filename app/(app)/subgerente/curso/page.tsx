@@ -23,7 +23,7 @@ async function Curso({ searchParams }: Pick<PageProps<"/subgerente/curso">, "sea
 
 export default function CursoPage({ searchParams }: PageProps<"/subgerente/curso">) {
   return (
-    <Suspense fallback={<SubgerenteSkeleton label="Cargando curso de la semana" kpis={5} />}>
+    <Suspense fallback={<SubgerenteSkeleton label="Cargando curso de la semana" kpis={4} />}>
       <Curso searchParams={searchParams} />
     </Suspense>
   )

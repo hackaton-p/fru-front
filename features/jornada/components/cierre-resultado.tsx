@@ -2,7 +2,7 @@ import { CircleCheck, CircleX } from "lucide-react"
 import { StatCard } from "@/components/shared/stat-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Jornada, ParametrosPlanta, PlanDia } from "@/lib/domain"
-import { formatDecimal, formatHoras, formatInt, formatPercent } from "@/lib/format"
+import { formatDecimal, formatHoras, formatInt } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 interface CierreResultadoProps {
@@ -18,7 +18,6 @@ export function CierreResultado({ jornada, dia, parametros: p, children }: Cierr
   const c = jornada.cierre!
   const presentes = jornada.areas.reduce((s, a) => s + a.trabajadoresPresentes, 0)
   const rendimiento = presentes > 0 && c.horasTrabajadas > 0 ? c.jabasProcesadas / (presentes * c.horasTrabajadas) : 0
-  const kg = c.kgLoose + c.kgFijo
   const Icono = c.metaCumplida ? CircleCheck : CircleX
 
   return (
@@ -38,7 +37,7 @@ export function CierreResultado({ jornada, dia, parametros: p, children }: Cierr
         ) : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard
             label="Jabas procesadas"
             value={formatInt(c.jabasProcesadas)}
@@ -60,11 +59,6 @@ export function CierreResultado({ jornada, dia, parametros: p, children }: Cierr
             label="Rendimiento real"
             value={formatDecimal(rendimiento)}
             hint={`jabas por persona-hora · default ${formatDecimal(p.rendimientoPersonaHora)}`}
-          />
-          <StatCard
-            label="% descarte"
-            value={formatPercent(c.jabasProcesadas > 0 ? c.jabasDescarte / c.jabasProcesadas : 0)}
-            hint={`% loose ${formatPercent(kg > 0 ? c.kgLoose / kg : 0, 0)}`}
           />
         </div>
         {children ? <div>{children}</div> : null}

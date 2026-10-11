@@ -45,7 +45,7 @@ function ResultadoPlan({ plan }: { plan: Plan }) {
           </AlertDescription>
           <AlertAction>
             <Button asChild size="sm" variant="outline">
-              <Link href={`/subgerente/curso?planta=${plan.plantaId}&semana=${plan.semana}`}>
+              <Link href={`/subgerente/curso?plan=${plan.id}`}>
                 <ChartColumn data-icon="inline-start" aria-hidden />
                 Ver curso
               </Link>
