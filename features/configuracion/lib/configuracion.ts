@@ -30,63 +30,63 @@ export interface GrupoDef {
 
 export const GRUPOS: GrupoDef[] = [
   {
-    titulo: "Personal y rendimiento",
+    titulo: "Personal",
     descripcion: "Con esto el sistema calcula cuántos trabajadores necesita cada día.",
     campos: [
       {
         key: "rendimientoPersonaHora",
         label: "Rendimiento por persona",
         unidad: "jabas / h",
-        ayuda: "Jabas que procesa en promedio una persona en una hora, contando a todo el personal.",
+        ayuda: "Cuántas jabas procesa una persona en una hora, en promedio. Por ejemplo: 6 significa 6 jabas por persona cada hora. Se cuenta a todo el personal, no solo a packing.",
       },
       {
         key: "personalMaximo",
-        label: "Personal máximo disponible",
+        label: "Personal máximo",
         unidad: "personas",
-        ayuda: "Tope de trabajadores; si se necesitan más, el plan sube las horas.",
+        ayuda: "La mayor cantidad de personas que puede trabajar ese día, sumando todas las áreas. Si no alcanzan, el sistema calcula más horas de trabajo.",
       },
     ],
   },
   {
-    titulo: "Jornada",
+    titulo: "Horario",
     descripcion:
       "Un solo turno por día. Pasar de la jornada más las horas extra es riesgo de turno extra.",
     campos: [
       {
         key: "horasJornada",
-        label: "Horas por jornada",
+        label: "Duración del turno",
         unidad: "horas",
-        ayuda: "Duración normal del turno de packing.",
+        ayuda: "Cuántas horas dura un turno normal, sin horas extra. Por ejemplo: 8 significa 8 horas. Para media hora, usa 0.5: 8.5 son 8 horas y 30 minutos.",
       },
       {
         key: "horasExtraMax",
-        label: "Horas extra permitidas",
+        label: "Horas extra máximas",
         unidad: "horas",
-        ayuda: "Máximo que se puede extender el turno el mismo día.",
+        ayuda: "Cuántas horas más puede durar el turno. Por ejemplo: un turno de 8 horas con 2 horas extra puede llegar a 10 horas. Si el plan necesita más, muestra riesgo de turno extra.",
       },
       {
         key: "horaInicio",
         label: "Hora de inicio",
         unidad: "",
-        ayuda: "Se usa para estimar la hora de fin durante la jornada.",
+        ayuda: "La hora a la que normalmente empieza el turno. El sistema la usa para estimar cuándo terminará. Por ejemplo: 17:00 son las 5 de la tarde.",
       },
     ],
   },
   {
-    titulo: "Eficiencia y tolerancias",
+    titulo: "Eficiencia y alertas",
     descripcion: "El margen que deja el plan para absorber imprevistos y cuándo avisar.",
     campos: [
       {
         key: "factorEficiencia",
         label: "Eficiencia planificada",
         unidad: "%",
-        ayuda: "El plan asume este porcentaje del rendimiento; lo que sobra es margen.",
+        ayuda: "Qué parte del rendimiento se usa para planificar. Con 80%, el sistema cuenta con 8 de cada 10 jabas de capacidad y deja espacio para pausas e imprevistos.",
       },
       {
         key: "toleranciaVolumen",
-        label: "Tolerancia de volumen entrante",
+        label: "Variación de fruta sin alerta",
         unidad: "%",
-        ayuda: "Desvío de jabas frente a lo esperado que no genera alerta.",
+        ayuda: "Cuánto puede variar la fruta recibida antes de avisar. Con 5%, si esperabas 100 jabas, una diferencia de hasta 5 jabas no genera alerta de volumen.",
       },
     ],
   },
