@@ -22,6 +22,8 @@ export interface ParametrosPlanta {
 export interface Planta extends ParametrosPlanta {
   id: number
   nombre: string
+  /** Última vez que se cambiaron los valores por defecto (ISO), si el back la expone. */
+  updatedAt?: string | null
 }
 
 /** Parámetros que el planificador puede cambiar en su plan. */

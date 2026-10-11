@@ -29,6 +29,8 @@ export const httpRepositories: Repositories = {
   plantas: {
     listar: () => apiRequest<Planta[]>("/plantas"),
     getById: (id) => apiRequest<Planta>(`/plantas/${id}`),
+    actualizar: (id, parametros) =>
+      apiRequest<Planta>(`/plantas/${id}`, { method: "PATCH", body: parametros }),
   },
   frutas: {
     getById: (id) => apiRequest<Fruta>(`/frutas/${id}`),
