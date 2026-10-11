@@ -3,7 +3,9 @@ import { z } from "zod"
 
 const schema = z.object({
   /** URL base del API NestJS. */
-  API_URL: z.url().default("http://localhost:3001"),
+  API_URL: z.url().default("http://localhost:3000"),
+  /** URL pública de este front. Better Auth exige un Origin confiable en POST /api/auth/*; un fetch servidor-a-servidor no lo manda solo, como sí hace un navegador. */
+  APP_URL: z.url().default("http://localhost:3001"),
   /** "true" usa los repositorios mock en memoria en lugar del API. */
   API_MOCK: z
     .enum(["true", "false"])
