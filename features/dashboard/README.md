@@ -11,3 +11,5 @@
 Por defecto usa `API_MOCK=true`. Para integrar el backend, configurar `API_MOCK=false`, `API_URL` y, opcionalmente, `DASHBOARD_API_PATH` (por defecto `/dashboard`). El endpoint GET debe devolver el contrato de `schema.ts`, con la misma estructura de `mock-data.ts`. Esta ruta es un contrato propuesto, pendiente de coordinación con el backend.
 
 Los promedios y acumulados excluyen jornadas abiertas o incompletas. El rendimiento semanal se pondera por persona-horas; jabas por trabajador se calcula sobre el personal total de los días cerrados. Sin jornadas cerradas se presenta un estado sin datos.
+
+El card panorámico del flujo semanal usa `plants[].weeklyFlow`, con `plannedCrates` (plan semanal) y `arrivedCrates` (recepción real). La diferencia absoluta y porcentual se calculan en la vista. Estos totales de recepción son independientes de las jabas procesadas de los reportes diarios. El campo es opcional para mantener compatibilidad con respuestas existentes. La escena isométrica SVG está animada con CSS, permite pausar el movimiento y respeta `prefers-reduced-motion`.

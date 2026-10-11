@@ -8,6 +8,7 @@ export const dashboardMock: DashboardData = {
   "plants": [
     {
       "id": "piura",
+      "weeklyFlow": { "plannedCrates": 60000, "arrivedCrates": 61500 },
       "name": "Piura",
       "label": "Piura (Santa María)",
       "shiftHours": 10,
@@ -67,6 +68,7 @@ export const dashboardMock: DashboardData = {
     },
     {
       "id": "sullana",
+      "weeklyFlow": { "plannedCrates": 195900, "arrivedCrates": 201000 },
       "name": "Sullana",
       "label": "Sullana",
       "shiftHours": 12,
