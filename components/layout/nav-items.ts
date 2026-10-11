@@ -7,7 +7,7 @@ export interface NavItem {
   roles: readonly Rol[]
 }
 
-const TODOS: readonly Rol[] = ["PLANIFICADOR", "SUBGERENTE", "JEFE_TURNO"]
+const TODOS: readonly Rol[] = ["ADMIN", "PLANIFICADOR", "SUBGERENTE", "JEFE_TURNO"]
 
 /** Menú superior común (contexto §5). */
 export const NAV_ITEMS: NavItem[] = [
@@ -20,12 +20,14 @@ export const NAV_ITEMS: NavItem[] = [
 
 /** Pantalla principal de cada rol. */
 export const HOME_POR_ROL: Record<Rol, string> = {
+  ADMIN: "/dashboard",
   PLANIFICADOR: "/planificador",
   SUBGERENTE: "/subgerente/planes",
   JEFE_TURNO: "/jefe-turno",
 }
 
 export const ROL_LABEL: Record<Rol, string> = {
+  ADMIN: "Administrador",
   PLANIFICADOR: "Planificador",
   SUBGERENTE: "Subgerente",
   JEFE_TURNO: "Jefe de turno",

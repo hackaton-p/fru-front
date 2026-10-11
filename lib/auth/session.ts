@@ -12,6 +12,7 @@ export const DEMO_ROL_COOKIE = "demo_rol"
 
 /** Un usuario de ejemplo por rol, mientras API_MOCK esté activo. */
 const USUARIOS_DEMO: Record<Rol, Usuario> = {
+  ADMIN: { id: 0, nombre: "Administrador", rol: "ADMIN", plantaId: null },
   PLANIFICADOR: { id: 1, nombre: "Planificador", rol: "PLANIFICADOR", plantaId: 1 },
   SUBGERENTE: { id: 2, nombre: "Subgerente", rol: "SUBGERENTE", plantaId: null },
   JEFE_TURNO: { id: 3, nombre: "Jefe de turno", rol: "JEFE_TURNO", plantaId: 1 },

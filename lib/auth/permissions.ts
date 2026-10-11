@@ -6,7 +6,7 @@ const PERMISOS = {
   "plan:aprobar": ["SUBGERENTE"],
   "planta:editar": ["SUBGERENTE"],
   "jornada:registrar": ["JEFE_TURNO"],
-  "dashboard:ver": ["PLANIFICADOR", "SUBGERENTE", "JEFE_TURNO"],
+  "dashboard:ver": ["ADMIN", "PLANIFICADOR", "SUBGERENTE", "JEFE_TURNO"],
 } as const satisfies Record<string, readonly Rol[]>
 
 export type Permiso = keyof typeof PERMISOS

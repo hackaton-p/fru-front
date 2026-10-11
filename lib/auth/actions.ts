@@ -84,6 +84,9 @@ export async function loginAction(input: {
   if (!meRes.ok) return { ok: false, error: "No se pudo cargar tu perfil." }
   const actor = (await meRes.json()) as { role: Rol }
 
+  const redirectTo = HOME_POR_ROL[actor.role]
+  if (!redirectTo) return { ok: false, error: "Tu rol no tiene acceso a esta aplicación." }
+
   ;(await cookies()).set(serverEnv().AUTH_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -91,7 +94,7 @@ export async function loginAction(input: {
     maxAge: 60 * 60 * 24,
   })
 
-  return { ok: true, data: { redirectTo: HOME_POR_ROL[actor.role] } }
+  return { ok: true, data: { redirectTo } }
 }
 
 export async function logoutAction() {

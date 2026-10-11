@@ -1,4 +1,4 @@
-export type Rol = "PLANIFICADOR" | "SUBGERENTE" | "JEFE_TURNO"
+export type Rol = "ADMIN" | "PLANIFICADOR" | "SUBGERENTE" | "JEFE_TURNO"
 
 export interface Usuario {
   id: number
