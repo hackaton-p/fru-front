@@ -26,6 +26,7 @@ export interface Planta extends ParametrosPlanta {
   configuradaAt?: string | null
   /** Última vez que se cambiaron los valores por defecto (ISO), si el back la expone. */
   updatedAt?: string | null
+  activo?: boolean
 }
 
 /** Parámetros que el planificador puede cambiar en su plan. */

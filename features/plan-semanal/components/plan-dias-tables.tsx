@@ -18,7 +18,12 @@ const metaColumn: DataTableColumn<PlanDia> = {
   id: "meta",
   header: "Meta (jabas)",
   numeric: true,
-  cell: (d) => formatInt(d.jabasMeta),
+  cell: (d) => <div className="text-right">
+    <div>{formatInt(d.jabasMeta)}</div>
+    {d.frutaMeta?.length ? <div className="mt-1 space-y-0.5 text-xs font-normal text-muted-foreground">
+      {d.frutaMeta.map((fruit) => <div key={fruit.frutaId}>{fruit.fruta}: {formatInt(fruit.jabasMeta)}</div>)}
+    </div> : null}
+  </div>,
 }
 
 const horasColumn: DataTableColumn<PlanDia> = {

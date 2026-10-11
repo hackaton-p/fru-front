@@ -45,6 +45,7 @@ export interface PlanDia {
   /** Fecha ISO (YYYY-MM-DD). */
   fecha: string
   jabasMeta: number
+  frutaMeta?: { frutaId: number; fruta: string; jabasMeta: number }[]
   trabajadores: number
   horas: number
   /** Fracción de volumen extra que cabe en jornada + horas extra (0.2 = +20%). */
@@ -81,7 +82,8 @@ export interface PlanCalculado {
 export interface Plan extends PlanCalculado {
   id: number
   plantaId: number
-  frutaId: number
+  /** Null for the consolidated plant-week plan; legacy plans keep a fruit ID. */
+  frutaId: number | null
   anio: number
   semana: number
   estado: EstadoPlan

@@ -44,7 +44,7 @@ async function PlanSemanal({ searchParams }: Pick<PageProps<"/planificador">, "s
   const selectedPlan = mode !== "crear" ? await repos.planes.getById(planId) : undefined
   if (selectedPlan && user.plantaId !== null && selectedPlan.plantaId !== user.plantaId) notFound()
   const query = selectedPlan
-    ? { plantaId: selectedPlan.plantaId, frutaId: selectedPlan.frutaId, anio: selectedPlan.anio, semana: selectedPlan.semana, inicio: selectedPlan.dias[0]?.fecha, cantidadDias: selectedPlan.dias.length, fechas: selectedPlan.dias.map(day => day.fecha).sort() }
+    ? { plantaId: selectedPlan.plantaId, frutaId: selectedPlan.frutaId ?? 1, anio: selectedPlan.anio, semana: selectedPlan.semana, inicio: selectedPlan.dias[0]?.fecha, cantidadDias: selectedPlan.dias.length, fechas: selectedPlan.dias.map(day => day.fecha).sort() }
     : resolverSemanaQuery(params, user, new Date())
   const back = <Button asChild variant="outline" className="self-start"><Link href="/planificador">← Volver a planificaciones</Link></Button>
   if (mode === "crear") {
@@ -57,7 +57,7 @@ async function PlanSemanal({ searchParams }: Pick<PageProps<"/planificador">, "s
   const start = typeof params.inicio === "string" && canSelectPlanningDate(params.inicio, null, minimumMonday) ? params.inicio : undefined
   if (mode === "crear" && !isValidPlanningSelection(start, query.fechas, minimumMonday)) {
     const [planta, fruta] = await Promise.all([repos.plantas.getById(query.plantaId), repos.frutas.getById(query.frutaId)])
-    return <>{back}<div><p className="text-sm text-muted-foreground">Planta {planta.nombre} · {fruta.nombre}</p><h1 className="font-heading text-3xl font-bold">Nueva planificación</h1><p className="text-muted-foreground">Elige un lunes y selecciona los días de esa semana que deseas planificar. Mínimo dos días, incluyendo el lunes.</p></div><PlanningPeriod key={start ?? "nuevo"} query={{ ...query, inicio: start, cantidadDias: undefined, fechas: undefined }} locked={false} minimumMonday={minimumMonday} /></>
+    return <>{back}<div><p className="text-sm text-muted-foreground">Planta {planta.nombre} · todas las frutas</p><h1 className="font-heading text-3xl font-bold">Nueva planificación semanal</h1><p className="text-muted-foreground">El pedido comercial define las frutas de la semana. Elige un lunes y selecciona los días que deseas planificar; incluye al menos el lunes.</p></div><PlanningPeriod key={start ?? "nuevo"} query={{ ...query, inicio: start, cantidadDias: undefined, fechas: undefined }} locked={false} minimumMonday={minimumMonday} /></>
   }
   const readOnly = mode === "detalle" || !canGestionar || Boolean(selectedPlan && !planEditable(selectedPlan))
   const data = await getPlanSemanalData(query, selectedPlan, mode === "crear")

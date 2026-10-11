@@ -12,12 +12,14 @@ interface PlanHeaderProps {
   semana: number
   planta: Planta
   fruta: Fruta
+  frutas: Fruta[]
   cosecha: ProyeccionCosechaDia[]
   planId: number | null
   estado: EstadoPlan | null
   canGestionar: boolean
   canEnviar?: boolean
   canCambiarSemana?: boolean
+  canCambiarFruta?: boolean
   inicio?: string
   cantidadDias?: number
   fechas?: string[]
@@ -41,12 +43,14 @@ export function PlanHeader({
   semana,
   planta,
   fruta,
+  frutas,
   cosecha,
   planId,
   estado,
   canGestionar,
   canEnviar = canGestionar,
   canCambiarSemana = canGestionar,
+  canCambiarFruta = canGestionar,
   inicio,
   cantidadDias = 5,
   fechas,
@@ -58,14 +62,18 @@ export function PlanHeader({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
-          Planta {planta.nombre} · {fruta.nombre}
+          Planta {planta.nombre} · Plan semanal general
         </p>
         <h1 className="font-heading text-3xl font-bold tracking-tight">
           Planificador · Semana {semana}, {anio}
         </h1>
         <p className="text-muted-foreground">
-          {rango ? `${rango} · ` : ""}{fechas ? `${fechas.length} días seleccionados · ` : ""}Cosecha y programa comercial en jabas
+          {rango ? `${rango} · ` : ""}{fechas ? `${fechas.length} días seleccionados · ` : ""}Pedido agrupado por cliente y fruta · jabas
         </p>
+        {canCambiarFruta ? <nav aria-label="Fruta para cargar" className="flex flex-wrap gap-2 pt-2">
+          <span className="self-center text-sm text-muted-foreground">Cargar fruta:</span>
+          {frutas.map((item) => <Link key={item.id} aria-current={item.id === fruta.id ? "page" : undefined} href={`/planificador?vista=crear&planta=${planta.id}&fruta=${item.id}&anio=${anio}&semana=${semana}&inicio=${inicio ?? mondayOfIsoWeek(anio, semana).toISOString().slice(0, 10)}${fechas ? `&fechas=${fechas.join(",")}` : ""}`} className={`rounded-full border px-3 py-1 text-sm ${item.id === fruta.id ? "border-primary bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:text-foreground"}`}>{item.nombre}</Link>)}
+        </nav> : null}
       </div>
       <div className="flex flex-wrap items-center gap-3">
         {canCambiarSemana && <div className="flex items-center gap-1" aria-label="Cambiar semana">

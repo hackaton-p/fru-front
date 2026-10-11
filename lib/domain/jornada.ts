@@ -41,7 +41,7 @@ interface RegistroBase {
 
 export type RegistroAvance = RegistroBase &
   (
-    | { tipo: "AVANCE"; jabasRecibidasAcum: number; jabasProcesadasAcum: number }
+    | { tipo: "AVANCE"; jabasRecibidasAcum: number; jabasProcesadasAcum: number; jabasPorFruta?: { frutaId: number; fruta: string; jabas: number }[] }
     | { tipo: "PERSONAL"; area: AreaCodigo; cambioPersonal: number }
     | { tipo: "VOLUMEN"; jabasEsperadasDia: number }
   )
@@ -68,6 +68,7 @@ export interface EstimacionJornada {
 export interface CierreJornada {
   horasTrabajadas: number
   jabasProcesadas: number
+  jabasPorFruta?: { frutaId: number; fruta: string; jabas: number }[]
   jabasDescarte: number
   kgLoose: number
   kgFijo: number
@@ -86,6 +87,7 @@ export interface Jornada {
   horasEstimadasInicio: number
   areas: JornadaArea[]
   registros: RegistroAvance[]
+  jabasPorFruta?: { frutaId: number; fruta: string; jabas: number }[]
   estimacion: EstimacionJornada
   cierre: CierreJornada | null
 }
@@ -142,7 +144,7 @@ export function repartirPorArea(
 
 /** `hora` es "HH:mm" del día de la jornada. */
 export type RegistroInput = { hora: string } & (
-  | { tipo: "AVANCE"; jabasRecibidasAcum: number; jabasProcesadasAcum: number }
+  | { tipo: "AVANCE"; jabasRecibidasAcum: number; jabasProcesadasAcum: number; jabasPorFruta?: { frutaId: number; fruta: string; jabas: number }[] }
   | { tipo: "PERSONAL"; area: AreaCodigo; cambioPersonal: number }
   | { tipo: "VOLUMEN"; jabasEsperadasDia: number }
 )
@@ -155,6 +157,7 @@ export interface AjusteHorasInput {
 export interface CerrarJornadaInput {
   horasTrabajadas: number
   jabasProcesadas: number
+  jabasPorFruta?: { frutaId: number; fruta: string; jabas: number }[]
   jabasDescarte: number
   kgLoose: number
   kgFijo: number

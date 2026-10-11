@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Planes", href: "/subgerente", roles: ["SUBGERENTE"] },
   { label: "Jornada", href: "/jefe-turno", roles: ["JEFE_TURNO"] },
   { label: "Configuración", href: "/configuracion", roles: TODOS },
+  { label: "Administración", href: "/administracion", roles: ["ADMIN", "SUBGERENTE", "JEFE_TURNO"] },
 ]
 
 /** Pantalla principal de cada rol. */

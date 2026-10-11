@@ -12,7 +12,7 @@ import { fetchAreaMap, type RawPlanDayArea, type RawWorkday } from "./mappers"
 
 interface RawDashboardDay {
   planId: number
-  fruitId: number
+  fruitId: number | null
   date: string
   targetCrates: string
   plannedWorkers: number
@@ -66,12 +66,12 @@ export const httpCurso: CursoRepository = {
   async getSemana(q) {
     const [raw, areaMap] = await Promise.all([
       apiRequest<RawDashboard>("/dashboard", {
-        query: { plantId: q.plantaId, fruitId: q.frutaId, year: q.anio, week: q.semana },
+        query: { plantId: q.plantaId, year: q.anio, week: q.semana },
       }),
       fetchAreaMap(),
     ])
     const dias = raw.days
-      .filter((d) => d.fruitId === q.frutaId)
+      .filter((d) => d.fruitId === null || d.fruitId === q.frutaId)
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((d) => toCursoDia(d, areaMap))
     if (dias.length === 0) return null

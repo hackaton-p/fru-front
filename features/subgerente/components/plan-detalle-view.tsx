@@ -112,7 +112,7 @@ export function PlanDetalleView({ data, user }: PlanDetalleViewProps) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <EstadoPlanBadge estado={plan.estado} />
           <p className="text-muted-foreground">
-            {formatRangoFechas(plan.dias.map((d) => d.fecha))} · {fruta.nombre} ·{" "}
+            {formatRangoFechas(plan.dias.map((d) => d.fecha))} · {fruta?.nombre ?? "Todas las frutas"} ·{" "}
             <PlanNota plan={plan} />
           </p>
         </div>

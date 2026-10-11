@@ -50,6 +50,7 @@ export function calcularDia(
   p: ParametrosPlanta,
 ): PlanDia {
   const jabasMeta = dia.jabas * factor
+  if (jabasMeta === 0) return { fecha: dia.fecha, jabasMeta, trabajadores: 0, horas: 0, margen: 0, estadoDia: "DENTRO_JORNADA", areas: repartirPorArea(0) }
   const ritmoPersona = p.rendimientoPersonaHora * p.factorEficiencia
   const requeridos = Math.ceil(jabasMeta / (ritmoPersona * p.horasJornada))
   const trabajadores = Math.max(1, Math.min(requeridos, Math.round(p.personalMaximo)))
@@ -69,6 +70,7 @@ export function calcularDia(
 export interface CalcularPlanArgs {
   cosecha: ProyeccionCosechaDia[]
   totalComercial: number
+  comercialPorFruta?: { frutaId: number; jabas: number }[]
   parametros: ParametrosPlanta
   parametrosModificados: boolean
   escenarioCosecha: EscenarioCosecha
@@ -76,7 +78,21 @@ export interface CalcularPlanArgs {
 
 export function calcularPlan(args: CalcularPlanArgs): PlanCalculado {
   const factor = FACTOR_ESCENARIO[args.escenarioCosecha]
-  const dias = args.cosecha.map((d) => calcularDia(d, factor, args.parametros))
+  const grouped = new Map<string, ProyeccionCosechaDia[]>()
+  for (const row of args.cosecha) grouped.set(row.fecha, [...(grouped.get(row.fecha) ?? []), row])
+  const remaining = new Map((args.comercialPorFruta ?? []).map((row) => [row.frutaId, row.jabas]))
+  const dias = [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([fecha, rows]) => {
+    const fruitMeta = rows.filter((row): row is typeof row & { frutaId: number } => row.frutaId !== undefined).flatMap((row) => {
+      if (!args.comercialPorFruta) return [{ frutaId: row.frutaId, fruta: row.fruta ?? `Fruta ${row.frutaId}`, jabasMeta: row.jabas * factor }]
+      const target = Math.min(row.jabas * factor, remaining.get(row.frutaId) ?? 0)
+      remaining.set(row.frutaId, Math.max(0, (remaining.get(row.frutaId) ?? 0) - target))
+      return target > 0 ? [{ frutaId: row.frutaId, fruta: row.fruta ?? `Fruta ${row.frutaId}`, jabasMeta: target }] : []
+    })
+    const target = args.comercialPorFruta ? fruitMeta.reduce((sum, row) => sum + row.jabasMeta, 0) : rows.reduce((sum, row) => sum + row.jabas, 0)
+    const day = calcularDia({ fecha, jabas: target }, args.comercialPorFruta ? 1 : factor, args.parametros)
+    day.frutaMeta = fruitMeta
+    return day
+  })
   const n = dias.length || 1
   const sum = (fn: (d: PlanDia) => number) => dias.reduce((s, d) => s + fn(d), 0)
   const jabasMeta = sum((d) => d.jabasMeta)

@@ -64,6 +64,7 @@ interface RawProgress {
   expectedDailyCrates: string | null
   cumulativeReceivedCrates: string | null
   cumulativeProcessedCrates: string | null
+  processedByFruit?: { fruitId: number; fruitName?: string; crates: string }[] | null
   presentWorkers: number
   estimatedHours: string | null
 }
@@ -151,6 +152,7 @@ function toEvento(r: RawProgress, areaMap: Record<number, AreaCodigo>): Evento {
       hora,
       jabasRecibidasAcum: Number(r.cumulativeReceivedCrates),
       jabasProcesadasAcum: Number(r.cumulativeProcessedCrates),
+      jabasPorFruta: (r.processedByFruit ?? []).map((item) => ({ frutaId: item.fruitId, fruta: item.fruitName ?? `Fruta ${item.fruitId}`, jabas: Number(item.crates) })),
     }
   }
   if (r.type === "PERSONAL") {
@@ -211,6 +213,7 @@ function toJornada(
     horasEstimadasInicio: Number(w.initialEstimatedHours ?? 0),
     areas,
     registros,
+    jabasPorFruta: (w.processedByFruit ?? []).map((item) => ({ frutaId: item.fruitId, fruta: item.fruitName ?? `Fruta ${item.fruitId}`, jabas: Number(item.crates) })),
     estimacion: estimar(horaInicio, inicio, eventos, ctx),
     cierre: w.closedAt
       ? {
@@ -221,6 +224,7 @@ function toJornada(
           kgFijo: Number(w.fixedKg ?? 0),
           metaCumplida: w.targetMet ?? false,
           diferencia: Number(w.difference ?? 0),
+          jabasPorFruta: (w.processedByFruit ?? []).map((item) => ({ frutaId: item.fruitId, fruta: item.fruitName ?? `Fruta ${item.fruitId}`, jabas: Number(item.crates) })),
         }
       : null,
   }
@@ -346,6 +350,7 @@ export const httpJornadas: JornadasRepository = {
         ? {
             cumulativeReceivedCrates: input.jabasRecibidasAcum,
             cumulativeProcessedCrates: input.jabasProcesadasAcum,
+            processedByFruit: input.jabasPorFruta?.map((item) => ({ fruitId: item.frutaId, crates: item.jabas })),
           }
         : input.tipo === "PERSONAL"
           ? {
@@ -376,6 +381,7 @@ export const httpJornadas: JornadasRepository = {
       body: {
         workedHours: input.horasTrabajadas,
         processedCrates: input.jabasProcesadas,
+        processedByFruit: input.jabasPorFruta?.map((item) => ({ fruitId: item.frutaId, crates: item.jabas })),
         discardedCrates: input.jabasDescarte,
         looseKg: input.kgLoose,
         fixedKg: input.kgFijo,

@@ -5,6 +5,7 @@ import type { Repositories } from "../types"
 import {
   fetchAreaMap,
   fetchCustomerMap,
+  fetchFruitMap,
   toCreatePlanBody,
   toPlan,
   toPlanCalculado,
@@ -34,8 +35,8 @@ import { httpJornadas } from "./jornadas"
 
 export const httpRepositories: Repositories = {
   plantas: {
-    listar: async () => {
-      const plantas = await apiRequest<RawPlant[]>("/plants")
+    listar: async (options) => {
+      const plantas = await apiRequest<RawPlant[]>("/plants", { query: { includeInactive: options?.includeInactive } })
       return plantas.map(toPlanta)
     },
     getById: async (id) => toPlanta(await apiRequest<RawPlant>(`/plants/${id}`)),
@@ -46,15 +47,34 @@ export const httpRepositories: Repositories = {
           body: toRawParametros(parametros),
         }),
       ),
+    crear: async (input) => toPlanta(await apiRequest<RawPlant>("/plants", {
+      method: "POST",
+      body: { name: input.nombre },
+    })),
+    actualizarCatalogo: async (id, input) => toPlanta(await apiRequest<RawPlant>(`/plants/${id}/catalog`, {
+      method: "PATCH",
+      body: { name: input.nombre, isActive: input.activo ?? true },
+    })),
+    desactivar: async (id) => { await apiRequest<void>(`/plants/${id}`, { method: "DELETE" }) },
   },
   frutas: {
+    listar: async (plantId, includeInactive) => (await apiRequest<RawFruit[]>("/fruits", { query: { plantId, includeInactive } })).map((f) => ({ id: f.id, nombre: f.name, activo: f.isActive ?? true, plantaIds: f.plantIds ?? [] })),
     // El back no tiene GET /fruits/:id, solo la lista completa del catálogo.
     getById: async (id) => {
       const frutas = await apiRequest<RawFruit[]>("/fruits")
       const fruta = frutas.find((f) => f.id === id)
       if (!fruta) throw new ApiError("Fruta no encontrada", 404)
-      return { id: fruta.id, nombre: fruta.name } satisfies Fruta
+      return { id: fruta.id, nombre: fruta.name, activo: fruta.isActive ?? true, plantaIds: fruta.plantIds ?? [] } satisfies Fruta
     },
+    crear: async (input) => {
+      const fruit = await apiRequest<RawFruit>("/fruits", { method: "POST", body: { name: input.nombre, plantIds: input.plantaIds, isActive: input.activo ?? true } })
+      return { id: fruit.id, nombre: fruit.name, activo: fruit.isActive ?? true, plantaIds: fruit.plantIds ?? input.plantaIds }
+    },
+    actualizar: async (id, input) => {
+      const fruit = await apiRequest<RawFruit>(`/fruits/${id}`, { method: "PATCH", body: { name: input.nombre, plantIds: input.plantaIds, isActive: input.activo ?? true } })
+      return { id: fruit.id, nombre: fruit.name, activo: fruit.isActive ?? true, plantaIds: fruit.plantIds ?? input.plantaIds }
+    },
+    desactivar: async (id) => { await apiRequest<void>(`/fruits/${id}`, { method: "DELETE" }) },
   },
   proyecciones: {
     guardar: async ({ tipo, registros, plantaId, frutaId, anio, semana }) => {
@@ -67,28 +87,29 @@ export const httpRepositories: Repositories = {
     },
     getCosecha: async (q) => {
       const raw = await apiRequest<RawProjection[]>("/projections", {
-        query: { plantId: q.plantaId, fruitId: q.frutaId, year: q.anio, week: q.semana, type: "COSECHA" },
+        query: { plantId: q.plantaId, year: q.anio, week: q.semana, type: "COSECHA" },
       })
-      return raw.map(
-        (p): ProyeccionCosechaDia => ({ fecha: p.date ?? "", jabas: Number(p.crates) }),
-      )
+      const fruits = await fetchFruitMap(q.plantaId)
+      return raw.map((p): ProyeccionCosechaDia => ({ frutaId: p.fruitId, fruta: fruits[p.fruitId] ?? `Fruta ${p.fruitId}`, fecha: p.date ?? "", jabas: Number(p.crates) }))
     },
     getComercial: async (q) => {
-      const [raw, clientes] = await Promise.all([
+      const [raw, clientes, frutas] = await Promise.all([
         apiRequest<RawProjection[]>("/projections", {
           query: {
             plantId: q.plantaId,
-            fruitId: q.frutaId,
             year: q.anio,
             week: q.semana,
             type: "COMERCIAL",
           },
         }),
         fetchCustomerMap(),
+        fetchFruitMap(q.plantaId),
       ])
       return raw.map((p): ProyeccionComercialCliente => {
         const clienteId = p.customerId ?? 0
         return {
+          frutaId: p.fruitId,
+          fruta: frutas[p.fruitId] ?? `Fruta ${p.fruitId}`,
           clienteId,
           cliente: clientes[clienteId] ?? `Cliente ${clienteId}`,
           jabas: Number(p.crates),
@@ -127,7 +148,7 @@ export const httpRepositories: Repositories = {
     getById: async (id) => toPlan(await apiRequest<RawPlan>(`/plans/${id}`)),
     getVigente: async (q) => {
       const res = await apiRequest<RawPlanList>("/plans", {
-        query: { plantId: q.plantaId, fruitId: q.frutaId, year: q.anio, week: q.semana },
+        query: { plantId: q.plantaId, year: q.anio, week: q.semana },
       })
       const plan = res.items[0]
       return plan ? toPlan(plan) : null

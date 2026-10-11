@@ -39,11 +39,14 @@ export interface RawPlant extends RawParameters {
   name: string
   updatedAt?: string | null
   configurationCompletedAt?: string | null
+  isActive?: boolean
 }
 
 export interface RawFruit {
   id: number
   name: string
+  isActive?: boolean
+  plantIds?: number[]
 }
 
 export interface RawArea {
@@ -87,6 +90,7 @@ export interface RawWorkday {
   presentWorkers: number
   receivedCrates: string
   processedCrates: string
+  processedByFruit?: { fruitId: number; fruitName?: string; crates: string }[]
   workedHours: string | null
   discardedCrates: string | null
   looseKg: string | null
@@ -103,6 +107,7 @@ export interface RawPlanDay {
   workday?: RawWorkday | null
   date: string
   targetCrates: string
+  fruitTargets?: { fruitId: number; fruitName: string; crates: string }[]
   workers: number
   hours: string
   margin: number | null
@@ -128,7 +133,7 @@ export interface RawSimulation {
 export interface RawPlan extends RawSimulation {
   id: number
   plantId: number
-  fruitId: number
+  fruitId: number | null
   year: number
   week: number
   harvestScenario: string
@@ -181,6 +186,7 @@ export function toPlanta(p: RawPlant): Planta {
     nombre: p.name,
     configuradaAt: p.configurationCompletedAt ?? null,
     updatedAt: p.updatedAt ?? null,
+    activo: p.isActive ?? true,
     ...toParametros(p),
   }
 }
@@ -191,7 +197,6 @@ export function toCreatePlanBody(input: CalcularPlanInput) {
     dayCount: input.cantidadDias,
     selectedDates: input.fechas,
     plantId: input.plantaId,
-    fruitId: input.frutaId,
     year: input.anio,
     week: input.semana,
     harvestScenario: input.escenarioCosecha,
@@ -223,6 +228,11 @@ export async function fetchCustomerMap(): Promise<Record<number, string>> {
   return Object.fromEntries(page.items.map((c) => [c.id, c.name]))
 }
 
+export async function fetchFruitMap(plantId: number): Promise<Record<number, string>> {
+  const fruits = await apiRequest<RawFruit[]>("/fruits", { query: { plantId } })
+  return Object.fromEntries(fruits.map((fruit) => [fruit.id, fruit.name]))
+}
+
 function toPlanDiaArea(a: RawPlanDayArea, areaMap: Record<number, AreaCodigo>): PlanDiaArea {
   const area = areaMap[a.areaId]
   if (!area) throw new ApiError(`Área desconocida en el back (id ${a.areaId})`, 500)
@@ -233,6 +243,7 @@ function toPlanDia(d: RawPlanDay, areaMap: Record<number, AreaCodigo>): PlanDia 
   return {
     fecha: d.date,
     jabasMeta: Number(d.targetCrates),
+    frutaMeta: (d.fruitTargets ?? []).map((target) => ({ frutaId: target.fruitId, fruta: target.fruitName, jabasMeta: Number(target.crates) })),
     trabajadores: d.workers,
     horas: Number(d.hours),
     margen: d.margin ?? 0,
@@ -281,7 +292,7 @@ export async function toPlan(
   return {
     id: p.id,
     plantaId: p.plantId,
-    frutaId: p.fruitId,
+    frutaId: p.fruitId ?? null,
     anio: p.year,
     semana: p.week,
     estado: p.status as EstadoPlan,
