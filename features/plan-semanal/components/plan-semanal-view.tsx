@@ -1,4 +1,4 @@
-import { TriangleAlert, CircleX, FileSpreadsheet } from "lucide-react"
+import { TriangleAlert, CircleX } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { can } from "@/lib/auth/permissions"
@@ -32,13 +32,15 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
   const proyeccionesListas = comercialLista && dates.length > 0 && dates.every(date => cosecha.some(day => day.fecha === date))
   const configuracionLista = Boolean(planta.configuradaAt)
   const defaults = parametrosDe(planta)
-  const missingProjections = [
-    cosechaLista ? null : "la proyección de cosecha",
-    comercialLista ? null : "el programa comercial",
-  ].filter(Boolean).join(" y ")
 
   return (
     <>
+      <PlanPasos
+        configuracionLista={configuracionLista}
+        cosechaLista={cosechaLista}
+        comercialLista={comercialLista}
+        planCreado={plan !== null}
+      />
       {erroresCarga.length > 0 ? (
         <Alert variant="destructive">
           <TriangleAlert aria-hidden />
@@ -69,13 +71,6 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
       />
       <PlanningPeriod key={`${query.inicio}-${query.fechas?.join(",")}`} query={query} locked={Boolean(plan) || readOnly} minimumMonday={minimumMonday} />
       {plan && can(user.rol, "plan:gestionar") && ((plan.estado === "BORRADOR" && !plan.fechaEnvio) || plan.estado === "RECHAZADO") && <div className="self-start"><DiscardPlanButton planId={plan.id} /></div>}
-      <PlanPasos
-        configuracionLista={configuracionLista}
-        cosechaLista={cosechaLista}
-        comercialLista={comercialLista}
-        planCreado={plan !== null}
-      />
-
       {!configuracionLista ? (
         <Alert>
           <TriangleAlert aria-hidden />
@@ -104,29 +99,12 @@ export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }:
         </Alert>
       ) : null}
 
-      {!missingProjections ? (
+      {proyeccionesListas ? (
         <AlertaPlanificacion
           cosechaJabas={cosecha.reduce((s, c) => s + c.jabas, 0)}
           comercialJabas={comercial.reduce((s, c) => s + c.jabas, 0)}
         />
-      ) : (
-        <Alert>
-          <FileSpreadsheet aria-hidden />
-          <AlertTitle>Faltan proyecciones para planificar</AlertTitle>
-          <AlertDescription>
-            <p>
-              Falta cargar {missingProjections} para {planta.nombre}, {fruta.nombre}, semana{" "}
-              {query.semana} de {query.anio}.
-            </p>
-            <p>
-              {canGestionar
-                ? "Importa Excel o completa los formularios de abajo para registrar las proyecciones pendientes."
-                : "Solicita al planificador que suba los archivos pendientes."}{" "}
-              Podrás crear el plan cuando estén cargadas ambas proyecciones.
-            </p>
-          </AlertDescription>
-        </Alert>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <ProgramaComercialCard comercial={comercial} query={query} canImport={canGestionar} />

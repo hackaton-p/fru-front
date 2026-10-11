@@ -12,7 +12,7 @@ const TODOS: readonly Rol[] = ["ADMIN", "PLANIFICADOR", "SUBGERENTE", "JEFE_TURN
 /** Menú superior común (contexto §5). */
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", roles: TODOS },
-  { label: "Plan semanal", href: "/planificador", roles: ["PLANIFICADOR"] },
+  { label: "Planificador", href: "/planificador", roles: ["PLANIFICADOR"] },
   { label: "Planes", href: "/subgerente", roles: ["SUBGERENTE"] },
   { label: "Jornada", href: "/jefe-turno", roles: ["JEFE_TURNO"] },
   { label: "Configuración", href: "/configuracion", roles: TODOS },
@@ -21,9 +21,9 @@ export const NAV_ITEMS: NavItem[] = [
 /** Pantalla principal de cada rol. */
 export const HOME_POR_ROL: Record<Rol, string> = {
   ADMIN: "/dashboard",
-  PLANIFICADOR: "/planificador",
-  SUBGERENTE: "/subgerente/planes",
-  JEFE_TURNO: "/jefe-turno",
+  PLANIFICADOR: "/dashboard",
+  SUBGERENTE: "/dashboard",
+  JEFE_TURNO: "/dashboard",
 }
 
 export const ROL_LABEL: Record<Rol, string> = {

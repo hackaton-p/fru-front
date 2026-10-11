@@ -61,7 +61,7 @@ export function PlanHeader({
           Planta {planta.nombre} · {fruta.nombre}
         </p>
         <h1 className="font-heading text-3xl font-bold tracking-tight">
-          Plan semanal · Semana {semana}, {anio}
+          Planificador · Semana {semana}, {anio}
         </h1>
         <p className="text-muted-foreground">
           {rango ? `${rango} · ` : ""}{fechas ? `${fechas.length} días seleccionados · ` : ""}Cosecha y programa comercial en jabas
