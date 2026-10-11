@@ -1,0 +1,119 @@
+/*
+ * Tema de marca · Pura Fruit
+ * -------------------------------------------------------------------------
+ * Este es el ÚNICO archivo que hay que tocar para adaptar la app a otra
+ * marca. Sigue la convención de shadcn/ui (https://ui.shadcn.com/docs/theming):
+ * cada superficie tiene su par `-foreground` para texto e íconos encima.
+ *
+ * - Los colores van en OKLCH (el hex de referencia está al lado).
+ * - `:root` es el modo claro y `.dark` el oscuro.
+ * - La correspondencia con las utilidades de Tailwind (bg-primary,
+ *   text-warning-foreground, ...) vive en globals.css (`@theme inline`).
+ *
+ * Tokens propios añadidos a los de shadcn (contexto §6 y §7):
+ * - success / success-foreground → estados verdes ("Dentro de jornada", "Aprobado").
+ * - warning / warning-foreground → estados ámbar ("Requiere horas extra", "Pendiente").
+ * - destructive se usa para coral (alertas, "Riesgo de turno extra", "Rechazado").
+ * - chart-1 = ejecutado (verde) y chart-2 = proyectado (ámbar), paleta apta
+ *   para daltonismo.
+ */
+
+:root {
+  --radius: 0.75rem;
+
+  /* Superficies */
+  --background: oklch(0.966 0.003 128.5); /* #F3F4F2 */
+  --foreground: oklch(0.239 0 0); /* #1F1F1F */
+  --card: oklch(1 0 0); /* #FFFFFF */
+  --card-foreground: oklch(0.239 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.239 0 0);
+
+  /* Marca */
+  --primary: oklch(0.525 0.138 147.9); /* #1E7F38 verde de textos y botones */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.931 0.005 145.5); /* #E6E9E6 */
+  --secondary-foreground: oklch(0.239 0 0);
+  --muted: oklch(0.953 0.005 134.9); /* #EEF0ED */
+  --muted-foreground: oklch(0.423 0.007 153.6); /* #4B4F4C */
+  --accent: oklch(0.951 0.025 152.9); /* #E3F4E7 */
+  --accent-foreground: oklch(0.419 0.108 148.1); /* #155C28 */
+
+  /* Estados */
+  --destructive: oklch(0.546 0.177 29.1); /* #C2382C coral para textos */
+  --success: oklch(0.951 0.025 152.9); /* #E3F4E7 */
+  --success-foreground: oklch(0.419 0.108 148.1); /* #155C28 */
+  --warning: oklch(0.961 0.034 78.7); /* #FFF0D9 */
+  --warning-foreground: oklch(0.479 0.11 58.1); /* #8A4B0B */
+
+  /* Bordes y foco */
+  --border: oklch(0.881 0.007 145.5); /* #D5D9D5 */
+  --input: oklch(0.881 0.007 145.5);
+  --ring: oklch(0.618 0.157 147.9); /* #2E9E4A */
+
+  /* Gráficos */
+  --chart-1: oklch(0.525 0.138 147.9); /* #1E7F38 ejecutado */
+  --chart-2: oklch(0.763 0.141 72.8); /* #E8A23A proyectado */
+  --chart-3: oklch(0.618 0.193 28.4); /* #E2483C */
+  --chart-4: oklch(0.706 0.015 148.7); /* #9AA39B */
+  --chart-5: oklch(0.239 0 0); /* #1F1F1F */
+
+  /* Sidebar */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.239 0 0);
+  --sidebar-primary: oklch(0.525 0.138 147.9);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.951 0.025 152.9);
+  --sidebar-accent-foreground: oklch(0.419 0.108 148.1);
+  --sidebar-border: oklch(0.881 0.007 145.5);
+  --sidebar-ring: oklch(0.618 0.157 147.9);
+}
+
+.dark {
+  /* Superficies */
+  --background: oklch(0.188 0.005 145.4); /* #121412 */
+  --foreground: oklch(0.966 0.003 128.5);
+  --card: oklch(0.231 0.007 145.3); /* #1B1E1B */
+  --card-foreground: oklch(0.966 0.003 128.5);
+  --popover: oklch(0.231 0.007 145.3);
+  --popover-foreground: oklch(0.966 0.003 128.5);
+
+  /* Marca */
+  --primary: oklch(0.709 0.178 147.8); /* #3DBE5C verde del logo */
+  --primary-foreground: oklch(0.217 0.039 150.2); /* #0B1F10 */
+  --secondary: oklch(0.28 0.009 145.3); /* #262A26 */
+  --secondary-foreground: oklch(0.966 0.003 128.5);
+  --muted: oklch(0.28 0.009 145.3);
+  --muted-foreground: oklch(0.706 0.015 148.7); /* #9AA39B */
+  --accent: oklch(0.32 0.049 151.2); /* #1F3A26 */
+  --accent-foreground: oklch(0.856 0.084 151.3); /* #A7E0B4 */
+
+  /* Estados */
+  --destructive: oklch(0.695 0.161 29.5); /* #F0705F */
+  --success: oklch(0.32 0.049 151.2);
+  --success-foreground: oklch(0.856 0.084 151.3);
+  --warning: oklch(0.301 0.052 75.6); /* #3D2A0C */
+  --warning-foreground: oklch(0.86 0.098 77.4); /* #F5C986 */
+
+  /* Bordes y foco */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.709 0.178 147.8);
+
+  /* Gráficos */
+  --chart-1: oklch(0.709 0.178 147.8);
+  --chart-2: oklch(0.86 0.098 77.4);
+  --chart-3: oklch(0.695 0.161 29.5);
+  --chart-4: oklch(0.706 0.015 148.7);
+  --chart-5: oklch(0.966 0.003 128.5);
+
+  /* Sidebar */
+  --sidebar: oklch(0.231 0.007 145.3);
+  --sidebar-foreground: oklch(0.966 0.003 128.5);
+  --sidebar-primary: oklch(0.709 0.178 147.8);
+  --sidebar-primary-foreground: oklch(0.217 0.039 150.2);
+  --sidebar-accent: oklch(0.28 0.009 145.3);
+  --sidebar-accent-foreground: oklch(0.966 0.003 128.5);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.709 0.178 147.8);
+}
