@@ -19,7 +19,6 @@ import {
   type RawProjection,
   type RawSimulation,
 } from "./mappers"
-import { ApiError } from "@/lib/api/errors"
 import { httpCurso } from "./curso"
 import { httpJornadas } from "./jornadas"
 
@@ -59,11 +58,8 @@ export const httpRepositories: Repositories = {
   },
   frutas: {
     listar: async (plantId, includeInactive) => (await apiRequest<RawFruit[]>("/fruits", { query: { plantId, includeInactive } })).map((f) => ({ id: f.id, nombre: f.name, activo: f.isActive ?? true, plantaIds: f.plantIds ?? [] })),
-    // El back no tiene GET /fruits/:id, solo la lista completa del catálogo.
     getById: async (id) => {
-      const frutas = await apiRequest<RawFruit[]>("/fruits")
-      const fruta = frutas.find((f) => f.id === id)
-      if (!fruta) throw new ApiError("Fruta no encontrada", 404)
+      const fruta = await apiRequest<RawFruit>(`/fruits/${id}`)
       return { id: fruta.id, nombre: fruta.name, activo: fruta.isActive ?? true, plantaIds: fruta.plantIds ?? [] } satisfies Fruta
     },
     crear: async (input) => {

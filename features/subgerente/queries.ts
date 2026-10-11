@@ -61,7 +61,7 @@ export async function getPlanDetalleData(id: number, user: Usuario): Promise<Pla
 
   const [planta, fruta] = await Promise.all([
     repos.plantas.getById(plan.plantaId),
-    plan.frutaId === null ? Promise.resolve(null) : repos.frutas.getById(plan.frutaId),
+    plan.frutaId == null ? Promise.resolve(null) : repos.frutas.getById(plan.frutaId),
   ])
   return { plan, planta, fruta }
 }

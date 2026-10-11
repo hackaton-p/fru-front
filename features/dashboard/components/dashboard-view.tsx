@@ -16,12 +16,12 @@ export function DashboardView({ data }: { data: DashboardData }) {
   const { metrics, insights, charts } = buildDashboard(plant)
   const hasPlan = plant.hasPlan ?? plant.days.some(day => day.projectedCrates > 0 || day.projectedStaff > 0)
   return <div className="flex flex-col gap-6 pb-8">
-    <DashboardHeader week={data.week} period={data.period} plants={data.plants} selectedPlant={plant} onPlantChange={setPlantId} />
+    <DashboardHeader year={data.year} week={data.week} period={data.period} plants={data.plants} selectedPlant={plant} onPlantChange={setPlantId} />
     {!hasPlan && <Alert>
       <AlertTitle>Crea la planificación semanal</AlertTitle>
       <AlertDescription>
         <p>Aún no hay una planificación aprobada para {plant.name} en la semana {data.week}. Los indicadores se muestran en cero hasta registrar datos.</p>
-        <Link href={`/planificador?planta=${plant.id}&semana=${data.week}`} className="font-semibold text-primary underline underline-offset-4">Crear planificación →</Link>
+        <Link href={`/planificador?planta=${plant.id}&anio=${data.year}&semana=${data.week}`} className="font-semibold text-primary underline underline-offset-4">Crear planificación →</Link>
       </AlertDescription>
     </Alert>}
     <WeeklyFlowCard summary={plant.weeklyFlow ?? { plannedCrates: 0, arrivedCrates: 0 }} />

@@ -29,6 +29,7 @@ export function mapDashboard(response: DashboardResponse, plants: Planta[]): Das
   }).format(new Date(`${date}T00:00:00Z`))
   const period = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`
   return {
+    year: response.year,
     week: response.week,
     period: `${period(dates[0])} al ${period(dates[6])}`,
     source: "planificación y jornadas de packing",

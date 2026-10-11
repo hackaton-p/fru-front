@@ -2,6 +2,7 @@ import type { DashboardData } from "./schema"
 
 /** Reportes de ejemplo de la referencia; editar aquí para probar otros escenarios. */
 export const dashboardMock: DashboardData = {
+  "year": 2026,
   "week": 41,
   "period": "05/10 al 09/10",
   "source": "reportes diarios Sullana y Santa María / Piura",

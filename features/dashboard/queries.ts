@@ -5,13 +5,13 @@ import { dashboardSchema } from "./schema"
 import { dashboardMock } from "./mock-data"
 import { getCurrentUser } from "@/lib/auth/session"
 import { getRepositories } from "@/lib/repositories"
-import { isoWeek } from "@/lib/dates"
+import { resolveDashboardWeek, type DashboardSearchParams } from "./week-selection"
 import { mapDashboard, type DashboardResponse } from "./api-mapper"
 
-export async function getDashboard() {
+export async function getDashboard(searchParams: DashboardSearchParams = {}) {
   if (serverEnv().API_MOCK) return dashboardSchema.parse(dashboardMock)
   const user = await getCurrentUser()
-  const { year, week } = isoWeek(new Date())
+  const { year, week } = resolveDashboardWeek(searchParams)
   const [response, plants] = await Promise.all([
     apiRequest<DashboardResponse>(process.env.DASHBOARD_API_PATH || "/dashboard", {
       query: { year, week, plantId: user.plantaId ?? undefined },
