@@ -11,20 +11,25 @@ import { PlanPasos } from "./plan-pasos"
 import { ProgramaComercialCard, ProyeccionCosechaCard } from "./proyecciones-cards"
 import { CreateOfficialPlan } from "./create-official-plan"
 import { planEditable } from "../lib/plan-comparator"
+import { PlanningPeriod } from "./planning-period"
+import { DiscardPlanButton } from "./discard-plan-button"
+import { planningDates } from "@/lib/dates"
 
 interface PlanSemanalViewProps {
   data: PlanSemanalData
   user: Usuario
   readOnly?: boolean
+  minimumMonday: string
 }
 
 /** Planificador · Plan semanal. */
-export function PlanSemanalView({ data, user, readOnly = false }: PlanSemanalViewProps) {
+export function PlanSemanalView({ data, user, readOnly = false, minimumMonday }: PlanSemanalViewProps) {
   const { query, planta, fruta, cosecha, comercial, plan, erroresCarga } = data
   const canGestionar = !readOnly && can(user.rol, "plan:gestionar")
   const cosechaLista = cosecha.length > 0
   const comercialLista = comercial.length > 0
-  const proyeccionesListas = cosechaLista && comercialLista
+  const dates = planningDates(query)
+  const proyeccionesListas = comercialLista && dates.length > 0 && dates.every(date => cosecha.some(day => day.fecha === date))
   const configuracionLista = Boolean(planta.configuradaAt)
   const defaults = parametrosDe(planta)
   const missingProjections = [
@@ -55,7 +60,15 @@ export function PlanSemanalView({ data, user, readOnly = false }: PlanSemanalVie
         planId={plan?.id ?? null}
         estado={plan?.estado ?? null}
         canGestionar={canGestionar}
+        canEnviar={false}
+        canCambiarSemana={canGestionar && !plan}
+        inicio={query.inicio}
+        cantidadDias={query.cantidadDias}
+        fechas={query.fechas}
+        minimumMonday={minimumMonday}
       />
+      <PlanningPeriod key={`${query.inicio}-${query.fechas?.join(",")}`} query={query} locked={Boolean(plan) || readOnly} minimumMonday={minimumMonday} />
+      {plan && can(user.rol, "plan:gestionar") && ((plan.estado === "BORRADOR" && !plan.fechaEnvio) || plan.estado === "RECHAZADO") && <div className="self-start"><DiscardPlanButton planId={plan.id} /></div>}
       <PlanPasos
         configuracionLista={configuracionLista}
         cosechaLista={cosechaLista}
@@ -115,13 +128,13 @@ export function PlanSemanalView({ data, user, readOnly = false }: PlanSemanalVie
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <ProgramaComercialCard comercial={comercial} query={query} canImport={canGestionar} />
         <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} />
       </div>
 
-      {canGestionar && planEditable(plan) ? <CreateOfficialPlan query={query} existing={plan !== null} enabled={proyeccionesListas && configuracionLista && erroresCarga.length === 0} /> : null}
-      {plan ? <PlanOficialSection plan={plan} defaults={defaults} /> : null}
+      {canGestionar && planEditable(plan) ? <CreateOfficialPlan key={`${query.inicio}-${query.cantidadDias}`} query={query} planId={plan?.id} enabled={proyeccionesListas && configuracionLista && erroresCarga.length === 0} /> : null}
+      {plan ? <PlanOficialSection plan={plan} defaults={defaults} canEnviar={can(user.rol, "plan:gestionar") && plan.estado === "BORRADOR"} /> : null}
     </>
   )
 }

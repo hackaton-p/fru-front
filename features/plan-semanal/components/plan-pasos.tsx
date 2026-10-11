@@ -29,10 +29,10 @@ export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, pl
       listo: cosechaLista,
     },
     {
-      titulo: "Crear plan oficial",
+      titulo: "Ver planificación",
       detalle: planCreado
-        ? "Plan listo; puedes enviarlo a aprobación"
-        : "Crea el plan con los parámetros de la planta y envíalo a aprobación",
+        ? "Revisa el plan generado antes de enviarlo a aprobación"
+        : "Completa las proyecciones para generar y revisar el plan",
       listo: planCreado,
     },
   ]

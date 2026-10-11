@@ -1,5 +1,6 @@
 import "server-only"
 import { ApiError } from "@/lib/api/errors"
+import { addDays, mondayOfIsoWeek, nextPlanningMonday, planningDates, toIsoDate } from "@/lib/dates"
 import type { CalcularPlanInput, Plan, PlanCalculado, Planta, SemanaQuery, GuardarProyeccionInput } from "@/lib/domain"
 import { parametrosSchema } from "@/lib/parametros"
 import type { Repositories } from "../types"
@@ -30,6 +31,11 @@ const store = globalThis as unknown as {
 // Copia editable desde "Configuración de planta"; los planes semilla usan los valores originales.
 const plantas = (store.__mockPlantas ??= new Map(PLANTAS.map((p) => [p.id, { ...p }])))
 const planes = (store.__mockPlanes ??= new Map(planesSemilla().map((p) => [key(p), p])))
+const latestPlan = (q: SemanaQuery) => [...planes.values()].filter(p => p.plantaId === q.plantaId && p.frutaId === q.frutaId && p.anio === q.anio && p.semana === q.semana).sort((a, b) => b.id - a.id)[0]
+const savePlan = (plan: Plan) => {
+  const entry = [...planes.entries()].find(([, p]) => p.id === plan.id)
+  planes.set(entry?.[0] ?? `${key(plan)}-${plan.id}`, plan)
+}
 const projections: Map<string, GuardarProyeccionInput> = (store.__mockProjections ??= new Map<string, GuardarProyeccionInput>())
 const projectionKey = (q: SemanaQuery, type: string) => `${q.plantaId}-${q.frutaId}-${q.anio}-${q.semana}-${type}`
 store.__mockPlanId ??= ULTIMO_ID_SEMILLA
@@ -56,7 +62,8 @@ function decidir(id: number, cambios: Pick<Plan, "estado" | "comentarioAprobacio
   }
   const ahora = new Date().toISOString()
   const decidido: Plan = { ...plan, ...cambios, fechaAprobacion: ahora, updatedAt: ahora }
-  planes.set(key(plan), decidido)
+  if (cambios.estado === "APROBADO" && [...planes.values()].some(p => p.id !== plan.id && p.plantaId === plan.plantaId && p.frutaId === plan.frutaId && p.anio === plan.anio && p.semana === plan.semana && ["APROBADO", "EN_EJECUCION", "CERRADO"].includes(p.estado))) throw new ApiError("Ya existe un plan aprobado para esta semana.", 409)
+  savePlan(decidido)
   return decidido
 }
 
@@ -80,8 +87,9 @@ function calcular(input: CalcularPlanInput): PlanCalculado {
   if (!planta.configuradaAt) {
     throw new ApiError("Confirma la configuración de la planta antes de planificar.", 409)
   }
+  const cosecha = projections.get(projectionKey(input, "COSECHA"))?.registros.map(r => ({ fecha: r.fecha!, jabas: r.jabas })) ?? cosechaMock(input.plantaId, input.semana)
   return calcularPlan({
-    cosecha: projections.get(projectionKey(input, "COSECHA"))?.registros.map(r => ({ fecha: r.fecha!, jabas: r.jabas })) ?? cosechaMock(input.plantaId, input.semana),
+    cosecha: input.fechas || input.inicio ? cosecha.filter(d => planningDates(input).includes(d.fecha)) : cosecha,
     totalComercial: projections.get(projectionKey(input, "COMERCIAL"))?.registros.reduce((s, r) => s + r.jabas, 0) ?? comercialMock(input.plantaId).reduce((s, c) => s + c.jabas, 0),
     parametros: input.parametros,
     parametrosModificados: EDITABLES.some((k) => input.parametros[k] !== planta[k]),
@@ -149,6 +157,11 @@ export const mockRepositories: Repositories = {
     },
   },
   planes: {
+    async descartar(id) {
+      const plan = planOrThrow(id)
+      if (!((plan.estado === "BORRADOR" && !plan.fechaEnvio) || plan.estado === "RECHAZADO")) throw new ApiError("Solo puedes descartar planes sin enviar o rechazados.", 409)
+      for (const [mapKey, p] of planes) if (p.id === id) planes.delete(mapKey)
+    },
     async listar(filtro = {}) {
       await delay()
       return [...planes.values()]
@@ -162,7 +175,7 @@ export const mockRepositories: Repositories = {
     },
     async getVigente(q) {
       await delay()
-      return planes.get(key(q)) ?? null
+      return latestPlan(q) ?? null
     },
     async simular(input) {
       await delay()
@@ -170,13 +183,22 @@ export const mockRepositories: Repositories = {
     },
     async aplicar(input) {
       await delay()
-      const actual = planes.get(key(input))
+      const actual = input.planId ? planOrThrow(input.planId) : undefined
+      if (!actual && toIsoDate(mondayOfIsoWeek(input.anio, input.semana)) < nextPlanningMonday(new Date())) throw new ApiError("New plans must start next week or later", 400)
+      if (!actual && input.fechas) {
+        const monday = toIsoDate(mondayOfIsoWeek(input.anio, input.semana))
+        const allowed = Array.from({ length: 6 }, (_, i) => toIsoDate(addDays(mondayOfIsoWeek(input.anio, input.semana), i)))
+        if (input.fechas.length < 2 || input.fechas.length > 6 || new Set(input.fechas).size !== input.fechas.length || !input.fechas.includes(monday) || input.fechas.some(date => !allowed.includes(date))) throw new ApiError("Invalid planning period", 400)
+      }
       if (actual && actual.estado !== "BORRADOR" && actual.estado !== "RECHAZADO") {
         throw new ApiError("El plan de esta semana ya fue enviado y no se puede reemplazar.", 409)
       }
       store.__mockPlanId = (store.__mockPlanId ?? 0) + 1
+      if (actual && (input.inicio && actual.dias[0]?.fecha !== input.inicio || input.cantidadDias && actual.dias.length !== input.cantidadDias)) throw new ApiError("El período del plan no puede modificarse.", 409)
+      if (actual && input.fechas && [...input.fechas].sort().join(",") !== actual.dias.map(day => day.fecha).sort().join(",")) throw new ApiError("El período del plan no puede modificarse.", 409)
+      const calculationInput = actual ? { ...input, fechas: actual.dias.map(day => day.fecha) } : input
       const plan: Plan = {
-        ...calcular(input),
+        ...calcular(calculationInput),
         id: actual?.id ?? store.__mockPlanId,
         plantaId: input.plantaId,
         frutaId: input.frutaId,
@@ -187,7 +209,7 @@ export const mockRepositories: Repositories = {
         fechaEnvio: null,
         comentarioAprobacion: null,
       }
-      planes.set(key(input), plan)
+      savePlan(plan)
       return plan
     },
     async enviar(planId) {
@@ -197,7 +219,7 @@ export const mockRepositories: Repositories = {
         throw new ApiError("Solo se puede enviar un plan en borrador.", 409)
       }
       const enviado: Plan = { ...plan, estado: "PENDIENTE", fechaEnvio: new Date().toISOString() }
-      planes.set(key(plan), enviado)
+      savePlan(enviado)
       return enviado
     },
     async aprobar(planId) {
@@ -213,7 +235,7 @@ export const mockRepositories: Repositories = {
   curso: {
     async getSemana(q) {
       await delay()
-      const plan = planes.get(key(q))
+      const plan = latestPlan(q)
       return cursoMock(q, new Date(), (fecha) => jornadas.cerradaDe(plan, fecha))
     },
   },
