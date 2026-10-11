@@ -1,0 +1,30 @@
+.weekly-flow-scene { width: 100%; height: auto; display: block; }
+.weekly-flow-stage { position: relative; min-width: 720px; }
+.weekly-flow-statistics { position: absolute; top: 3%; left: 7%; right: 7%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10%; }
+.weekly-flow-statistic { position: relative; width: 100%; max-width: 230px; margin: 0 auto; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); box-shadow: 0 6px 20px color-mix(in srgb, var(--foreground) 7%, transparent); }
+.weekly-flow-statistic::after { content: ""; position: absolute; left: 50%; top: 100%; height: 24px; border-left: 1px dashed var(--primary); }
+.weekly-flow-route { stroke-dasharray: 9 9; animation: weekly-flow-flow 1.2s linear infinite; }
+.weekly-flow-signal { transform-box: fill-box; transform-origin: center; animation: weekly-flow-pulse 2.6s ease-in-out infinite; }
+.weekly-flow-movingCrate { animation: weekly-flow-transfer 18s linear infinite; }
+.weekly-flow-paused * { animation-play-state: paused; }
+@keyframes weekly-flow-flow { to { stroke-dashoffset: -36; } }
+@keyframes weekly-flow-pulse { 0%,100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
+/* Llegadas → líneas de planning → rampa de bajada → acomodo en supervisión. */
+@keyframes weekly-flow-transfer {
+  0%, 2% { transform: translate(-22px, 0); opacity: 0; }
+  5% { transform: translate(0, 0); opacity: 1; }
+  15%, 23% { transform: translate(90px, 0); opacity: 1; }
+  43%, 54% { transform: translate(312px, 0); opacity: 1; }
+  61% { transform: translate(387px, 0); opacity: 1; }
+  69% { transform: translate(442px, 40px); opacity: 1; }
+  83%, 91% { transform: translate(582px, 40px); opacity: 1; }
+  96% { transform: translate(612px, 10px); opacity: 1; }
+  99%, 100% { transform: translate(612px, 10px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weekly-flow-route, .weekly-flow-signal, .weekly-flow-movingCrate { animation: none; }
+  .weekly-flow-movingCrate:nth-child(2) { transform: translate(110px, 0); }
+  .weekly-flow-movingCrate:nth-child(3) { transform: translate(220px, 0); }
+  .weekly-flow-movingCrate:nth-child(4) { transform: translate(330px, 0); }
+  .weekly-flow-movingCrate:nth-child(5) { transform: translate(490px, 40px); }
+}
