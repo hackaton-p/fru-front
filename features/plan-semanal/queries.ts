@@ -1,6 +1,6 @@
 import "server-only"
 import { z } from "zod"
-import { addDays, isoWeek, mondayOfIsoWeek } from "@/lib/dates"
+import { isoWeek, mondayOfIsoWeek, nextPlanningMonday, parseIsoDate } from "@/lib/dates"
 import {
   parametrosDe,
   type EscenarioCosecha,
@@ -15,11 +15,14 @@ import {
   type Usuario,
 } from "@/lib/domain"
 import { getRepositories } from "@/lib/repositories"
+import { canSelectPlanningDate, isValidPlanningSelection } from "./lib/planning-calendar"
 
 const FRUTA_POR_DEFECTO = 1
 const PLANTA_POR_DEFECTO = 1
 
 const searchParamsSchema = z.object({
+  inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
+  fechas: z.string().optional().catch(undefined),
   planta: z.coerce.number().int().positive().optional().catch(undefined),
   fruta: z.coerce.number().int().positive().optional().catch(undefined),
   anio: z.coerce.number().int().min(2000).max(2100).optional().catch(undefined),
@@ -36,12 +39,24 @@ export function resolverSemanaQuery(
   hoy: Date,
 ): SemanaQuery {
   const sp = searchParamsSchema.parse(searchParams)
-  const semanaSiguiente = isoWeek(addDays(mondayOfIsoWeek(isoWeek(hoy).year, isoWeek(hoy).week), 7))
+  const minimumMonday = nextPlanningMonday(hoy)
+  const semanaSiguiente = isoWeek(parseIsoDate(minimumMonday))
+  const selectedWeek = sp.inicio && canSelectPlanningDate(sp.inicio, null, minimumMonday) ? isoWeek(parseIsoDate(sp.inicio)) : null
+  const requestedYear = selectedWeek?.year ?? sp.anio ?? semanaSiguiente.year
+  const requestedWeek = selectedWeek?.week ?? sp.semana ?? semanaSiguiente.week
+  const eligible = mondayOfIsoWeek(requestedYear, requestedWeek) >= parseIsoDate(minimumMonday)
+  const anio = eligible ? requestedYear : semanaSiguiente.year
+  const semana = eligible ? requestedWeek : semanaSiguiente.week
+  const selection = sp.fechas?.split(",")
+  const fechas = isValidPlanningSelection(sp.inicio, selection, minimumMonday) ? selection!.sort() : undefined
   return {
     plantaId: user.plantaId ?? sp.planta ?? PLANTA_POR_DEFECTO,
     frutaId: sp.fruta ?? FRUTA_POR_DEFECTO,
-    anio: sp.anio ?? semanaSiguiente.year,
-    semana: sp.semana ?? semanaSiguiente.week,
+    anio,
+    semana,
+    inicio: mondayOfIsoWeek(anio, semana).toISOString().slice(0, 10),
+    cantidadDias: fechas?.length ?? 6,
+    fechas,
   }
 }
 
@@ -62,7 +77,7 @@ export interface PlanSemanalData {
   }
 }
 
-export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan): Promise<PlanSemanalData> {
+export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan, creating = false): Promise<PlanSemanalData> {
   const repos = getRepositories()
   const erroresCarga: string[] = []
   const [plantaResult, frutaResult, cosechaResult, comercialResult, planResult] = await Promise.allSettled([
@@ -70,7 +85,7 @@ export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan
     repos.frutas.getById(query.frutaId),
     repos.proyecciones.getCosecha(query),
     repos.proyecciones.getComercial(query),
-    selectedPlan ? Promise.resolve(selectedPlan) : repos.planes.getVigente(query),
+    selectedPlan ? Promise.resolve(selectedPlan) : creating ? Promise.resolve(null) : repos.planes.getVigente(query),
   ])
 
   const registrarError = (result: PromiseRejectedResult, recurso: string) => {

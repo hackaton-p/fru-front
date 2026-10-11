@@ -16,12 +16,18 @@ interface PlanHeaderProps {
   planId: number | null
   estado: EstadoPlan | null
   canGestionar: boolean
+  canEnviar?: boolean
+  canCambiarSemana?: boolean
+  inicio?: string
+  cantidadDias?: number
+  fechas?: string[]
+  minimumMonday?: string
 }
 
 function hrefSemana(anio: number, semana: number, plantaId: number, frutaId: number, offset: -1 | 1) {
   const lunes = mondayOfIsoWeek(anio, semana)
   const objetivo = isoWeek(addDays(lunes, offset * 7))
-  return `/planificador?vista=crear&planta=${plantaId}&fruta=${frutaId}&anio=${objetivo.year}&semana=${objetivo.week}`
+  return `/planificador?vista=crear&planta=${plantaId}&fruta=${frutaId}&anio=${objetivo.year}&semana=${objetivo.week}&inicio=${mondayOfIsoWeek(objetivo.year, objetivo.week).toISOString().slice(0, 10)}`
 }
 
 function rangoFechas(cosecha: ProyeccionCosechaDia[]) {
@@ -39,8 +45,15 @@ export function PlanHeader({
   planId,
   estado,
   canGestionar,
+  canEnviar = canGestionar,
+  canCambiarSemana = canGestionar,
+  inicio,
+  cantidadDias = 5,
+  fechas,
+  minimumMonday,
 }: PlanHeaderProps) {
-  const rango = rangoFechas(cosecha)
+  const rango = fechas ? rangoFechas(fechas.map(fecha => ({ fecha, jabas: 0 }))) : inicio ? rangoFechas(Array.from({ length: cantidadDias }, (_, index) => ({ fecha: addDays(new Date(`${inicio}T00:00:00Z`), index).toISOString().slice(0, 10), jabas: 0 }))) : rangoFechas(cosecha)
+  const canPrevious = !minimumMonday || addDays(mondayOfIsoWeek(anio, semana), -7).toISOString().slice(0, 10) >= minimumMonday
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex flex-col gap-1">
@@ -51,15 +64,15 @@ export function PlanHeader({
           Plan semanal · Semana {semana}, {anio}
         </h1>
         <p className="text-muted-foreground">
-          {rango ? `${rango} · ` : ""}Cosecha y programa comercial en jabas
+          {rango ? `${rango} · ` : ""}{fechas ? `${fechas.length} días seleccionados · ` : ""}Cosecha y programa comercial en jabas
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        {canGestionar && <div className="flex items-center gap-1" aria-label="Cambiar semana">
-          <Button asChild variant="outline" size="icon" aria-label="Semana anterior">
-            <Link href={hrefSemana(anio, semana, planta.id, fruta.id, -1)}>
+        {canCambiarSemana && <div className="flex items-center gap-1" aria-label="Cambiar semana">
+          <Button asChild={canPrevious} disabled={!canPrevious} variant="outline" size="icon" aria-label="Semana anterior">
+            {canPrevious ? <Link href={hrefSemana(anio, semana, planta.id, fruta.id, -1)}>
               <ChevronLeft aria-hidden />
-            </Link>
+            </Link> : <ChevronLeft aria-hidden />}
           </Button>
           <Button asChild variant="outline" size="icon" aria-label="Semana siguiente">
             <Link href={hrefSemana(anio, semana, planta.id, fruta.id, 1)}>
@@ -68,7 +81,7 @@ export function PlanHeader({
           </Button>
         </div>}
         <EstadoPlanBadge estado={estado} />
-        {canGestionar ? (
+        {canEnviar && planId !== null ? (
           <EnviarAprobacionButton planId={planId} disabled={estado !== "BORRADOR"} />
         ) : null}
       </div>

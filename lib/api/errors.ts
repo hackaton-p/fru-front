@@ -24,6 +24,10 @@ export function toUserMessage(error: unknown): string {
     if (error.status === 0) return "No se pudo conectar con el servidor. Intenta de nuevo."
     if (error.isUnauthorized) return "No tienes permiso para realizar esta acción."
     if (error.isConflict) {
+      if (error.message === "Only one plan can be approved for this plant, fruit and week") return "Ya existe un plan aprobado para esta planta, fruta y semana. Solo se puede aprobar uno."
+      if (error.message === "Only unsubmitted or rejected plans can be discarded") return "Solo puedes descartar un plan sin enviar o rechazado."
+      if (error.message === "The planning period cannot be modified" || error.message === "The planning week cannot be modified") return "El inicio y los días de un plan guardado no se pueden modificar. Crea otra planificación."
+      if (error.message === "Harvest projections must cover every planning day") return "Faltan proyecciones de cosecha para algunos días del período seleccionado."
       if (error.message === "A projection for this plant, fruit, week and type already exists") {
         return "Esta proyección ya está registrada para la planta, fruta y semana seleccionadas. Actualiza la página para verla."
       }
@@ -35,6 +39,9 @@ export function toUserMessage(error: unknown): string {
       }
       return error.message || "La acción no es válida para el estado actual del plan."
     }
+    if (error.message === "Invalid planning period") return "Selecciona de 2 a 6 días de la misma semana, de lunes a sábado. El lunes es obligatorio."
+    if (error.message === "New plans must start next week or later") return "Solo puedes crear planificaciones para la próxima semana en adelante."
+    if (error.message === "Harvest quantities must be whole crates") return "La proyección de cosecha solo acepta jabas enteras, sin decimales."
     if (error.message === "Duplicate dates or customers in workbook") return "Hay días o clientes repetidos. Revisa los registros antes de guardar."
     if (error.message === "Harvest date is outside the selected ISO week") return "Los días de cosecha deben pertenecer a la semana seleccionada."
     return error.message

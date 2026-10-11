@@ -225,6 +225,7 @@ export const httpRepositories: Repositories = {
     },
   },
   planes: {
+    descartar: async id => apiRequest<void>(`/plans/${id}`, { method: "DELETE" }),
     listar: async (filtro) => {
       const items: RawPlan[] = []
       for (let page = 1; ; page++) {
@@ -252,8 +253,8 @@ export const httpRepositories: Repositories = {
       return toPlanCalculado(res, input.escenarioCosecha)
     },
     aplicar: async (input) => {
-      const res = await apiRequest<RawPlan>("/plans", {
-        method: "POST",
+      const res = await apiRequest<RawPlan>(input.planId ? `/plans/${input.planId}` : "/plans", {
+        method: input.planId ? "PATCH" : "POST",
         body: toCreatePlanBody(input),
       })
       return toPlan(res)

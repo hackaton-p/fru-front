@@ -106,7 +106,10 @@ export function crearJornadasMock(
     return null
   }
 
-  const guardarPlan = (plan: Plan) => planes.set(keyPlan(plan), plan)
+  const guardarPlan = (plan: Plan) => {
+    const entry = [...planes.entries()].find(([, value]) => value.id === plan.id)
+    return planes.set(entry?.[0] ?? `${keyPlan(plan)}-${plan.id}`, plan)
+  }
 
   /** Guarda la jornada con su estimado vigente recalculado. */
   const guardar = (jornada: Omit<Jornada, "estimacion">, plan: Plan): Jornada => {

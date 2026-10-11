@@ -93,6 +93,7 @@ export interface Plan extends PlanCalculado {
 
 /** Body de `POST /planes/simular` y `POST /planes`. */
 export interface CalcularPlanInput extends SemanaQuery {
+  planId?: number
   escenarioCosecha: EscenarioCosecha
   /** Valores finales de los parámetros (defaults de la planta, cambiados o no). */
   parametros: ParametrosPlanta

@@ -160,6 +160,9 @@ export function toPlanta(p: RawPlant): Planta {
 
 export function toCreatePlanBody(input: CalcularPlanInput) {
   return {
+    startDate: input.inicio,
+    dayCount: input.cantidadDias,
+    selectedDates: input.fechas,
     plantId: input.plantaId,
     fruitId: input.frutaId,
     year: input.anio,
