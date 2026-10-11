@@ -1,3 +1,4 @@
+export * from "./curso"
 export * from "./fruta"
 export * from "./plan"
 export * from "./planta"

@@ -42,6 +42,18 @@ function ddmm(date: Date) {
   return `${dd}/${mm}`
 }
 
+/** "2026-10-12" → "12/10". */
+export function formatFechaCorta(iso: string): string {
+  return ddmm(parseIsoDate(iso))
+}
+
+/** Primera y última fecha ISO → "12/10 al 16/10". */
+export function formatRangoFechas(fechas: string[]): string {
+  if (fechas.length === 0) return ""
+  const orden = [...fechas].sort()
+  return `${formatFechaCorta(orden[0])} al ${formatFechaCorta(orden[orden.length - 1])}`
+}
+
 /** "2026-10-12" → "Lun 12/10". */
 export function formatDia(iso: string): string {
   const date = parseIsoDate(iso)

@@ -9,6 +9,8 @@ import { formatDia, formatHoras, formatInt, formatMargen } from "@/lib/format"
 const diaColumn: DataTableColumn<PlanDia> = {
   id: "dia",
   header: "Día",
+  // Fija al hacer scroll horizontal en pantallas angostas.
+  className: "sticky left-0 z-10 bg-card",
   cell: (d) => formatDia(d.fecha),
 }
 
@@ -82,12 +84,25 @@ const AREA_COLUMNS: { area: AreaCodigo; header: string }[] = [
   { area: "SANEAMIENTO", header: "Saneam." },
 ]
 
+const margenColumn: DataTableColumn<PlanDia> = {
+  id: "margen",
+  header: "Margen extra",
+  cell: (d) => <MargenCell margen={d.margen} />,
+}
+
+interface PlanAreasTableProps {
+  dias: PlanDia[]
+  /** Muestra el margen para volumen extra (detalle del subgerente). */
+  conMargen?: boolean
+}
+
 /** Paso 2: plan oficial con el personal repartido por área. */
-export function PlanAreasTable({ dias }: { dias: PlanDia[] }) {
+export function PlanAreasTable({ dias, conMargen = false }: PlanAreasTableProps) {
   const columns: DataTableColumn<PlanDia>[] = [
     diaColumn,
     metaColumn,
     horasColumn,
+    ...(conMargen ? [margenColumn] : []),
     ...AREA_COLUMNS.map(
       ({ area, header }): DataTableColumn<PlanDia> => ({
         id: area,

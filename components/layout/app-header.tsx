@@ -1,19 +1,12 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { Grape } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCurrentUser } from "@/lib/auth/session"
-import type { Rol } from "@/lib/domain"
 import { MainNav } from "./main-nav"
 import { ModeToggle } from "./mode-toggle"
 import { navItemsFor } from "./nav-items"
-
-const ROL_LABEL: Record<Rol, string> = {
-  PLANIFICADOR: "Planificador",
-  SUBGERENTE: "Subgerente",
-  JEFE_TURNO: "Jefe de turno",
-}
+import { RolDemoSwitcher } from "./rol-demo-switcher"
 
 /** Partes del header que dependen de la sesión (cookies → se resuelven por request). */
 async function SessionNav() {
@@ -21,10 +14,7 @@ async function SessionNav() {
   return (
     <>
       <MainNav items={navItemsFor(user.rol)} />
-      <div className="hidden items-center gap-2 text-sm lg:flex">
-        <span className="font-medium">{user.nombre}</span>
-        <Badge variant="outline">{ROL_LABEL[user.rol]}</Badge>
-      </div>
+      <RolDemoSwitcher user={user} />
     </>
   )
 }

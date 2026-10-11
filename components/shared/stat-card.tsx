@@ -15,7 +15,12 @@ export function StatCard({ label, value, hint, negative }: StatCardProps) {
     <Card size="sm">
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className={cn("text-2xl tabular-nums", negative && "text-destructive")}>
+        <CardTitle
+          className={cn(
+            "text-2xl font-bold tabular-nums group-data-[size=sm]/card:text-2xl",
+            negative && "text-destructive",
+          )}
+        >
           {value}
         </CardTitle>
       </CardHeader>

@@ -2,8 +2,10 @@ import "server-only"
 import { ApiError } from "@/lib/api/errors"
 import type { CalcularPlanInput, Plan, PlanCalculado, SemanaQuery } from "@/lib/domain"
 import type { Repositories } from "../types"
+import { cursoMock } from "./curso-data"
 import { comercialMock, cosechaMock, FRUTAS, PLANTAS } from "./data"
 import { calcularPlan } from "./plan-calculator"
+import { planesSemilla, ULTIMO_ID_SEMILLA } from "./planes-semilla"
 
 /*
  * Repositorios en memoria para trabajar sin el API (API_MOCK=true).
@@ -13,10 +15,30 @@ import { calcularPlan } from "./plan-calculator"
 const LATENCIA_MS = 300
 const delay = () => new Promise((resolve) => setTimeout(resolve, LATENCIA_MS))
 
-// Sobrevive al hot reload en desarrollo.
-const store = globalThis as unknown as { __mockPlanes?: Map<string, Plan>; __mockPlanId?: number }
-const planes = (store.__mockPlanes ??= new Map<string, Plan>())
 const key = (q: SemanaQuery) => `${q.plantaId}-${q.frutaId}-${q.semana}`
+
+// Sobrevive al hot reload en desarrollo. Arranca con los planes de ejemplo.
+const store = globalThis as unknown as { __mockPlanes?: Map<string, Plan>; __mockPlanId?: number }
+const planes = (store.__mockPlanes ??= new Map(planesSemilla().map((p) => [key(p), p])))
+store.__mockPlanId ??= ULTIMO_ID_SEMILLA
+
+function planOrThrow(id: number) {
+  const plan = [...planes.values()].find((p) => p.id === id)
+  if (!plan) throw new ApiError("Plan no encontrado", 404)
+  return plan
+}
+
+/** Aplica una transición de estado si el plan está pendiente (si no, 409 como el back). */
+function decidir(id: number, cambios: Pick<Plan, "estado" | "comentarioAprobacion">): Plan {
+  const plan = planOrThrow(id)
+  if (plan.estado !== "PENDIENTE") {
+    throw new ApiError("Solo se puede aprobar o rechazar un plan pendiente.", 409)
+  }
+  const ahora = new Date().toISOString()
+  const decidido: Plan = { ...plan, ...cambios, fechaAprobacion: ahora, updatedAt: ahora }
+  planes.set(key(plan), decidido)
+  return decidido
+}
 
 function plantaOrThrow(id: number) {
   const planta = PLANTAS.find((p) => p.id === id)
@@ -46,6 +68,10 @@ function calcular(input: CalcularPlanInput): PlanCalculado {
 
 export const mockRepositories: Repositories = {
   plantas: {
+    async listar() {
+      await delay()
+      return PLANTAS
+    },
     async getById(id) {
       await delay()
       return plantaOrThrow(id)
@@ -75,6 +101,17 @@ export const mockRepositories: Repositories = {
     },
   },
   planes: {
+    async listar(filtro = {}) {
+      await delay()
+      return [...planes.values()]
+        .filter((p) => !filtro.estado || p.estado === filtro.estado)
+        .filter((p) => !filtro.plantaId || p.plantaId === filtro.plantaId)
+        .sort((a, b) => b.semana - a.semana || a.plantaId - b.plantaId)
+    },
+    async getById(id) {
+      await delay()
+      return planOrThrow(id)
+    },
     async getVigente(q) {
       await delay()
       return planes.get(key(q)) ?? null
@@ -106,14 +143,28 @@ export const mockRepositories: Repositories = {
     },
     async enviar(planId) {
       await delay()
-      const plan = [...planes.values()].find((p) => p.id === planId)
-      if (!plan) throw new ApiError("Plan no encontrado", 404)
+      const plan = planOrThrow(planId)
       if (plan.estado !== "BORRADOR") {
         throw new ApiError("Solo se puede enviar un plan en borrador.", 409)
       }
       const enviado: Plan = { ...plan, estado: "PENDIENTE", fechaEnvio: new Date().toISOString() }
       planes.set(key(plan), enviado)
       return enviado
+    },
+    async aprobar(planId) {
+      await delay()
+      return decidir(planId, { estado: "APROBADO", comentarioAprobacion: null })
+    },
+    async rechazar(planId, comentario) {
+      await delay()
+      if (!comentario.trim()) throw new ApiError("El comentario es obligatorio para rechazar.", 400)
+      return decidir(planId, { estado: "RECHAZADO", comentarioAprobacion: comentario.trim() })
+    },
+  },
+  curso: {
+    async getSemana(q) {
+      await delay()
+      return cursoMock(q)
     },
   },
 }

@@ -1,6 +1,7 @@
 import "server-only"
 import { apiRequest } from "@/lib/api/http-client"
 import type {
+  CursoSemana,
   Fruta,
   Plan,
   PlanCalculado,
@@ -14,10 +15,13 @@ import type { Repositories } from "../types"
  * Implementación contra el API NestJS. Endpoints acordados en
  * contexto-plan-packing.md §6. `POST /planes/simular` es nuevo y debe
  * acordarse con el back (mismo body que `POST /planes`, no persiste).
+ * `GET /jornadas/curso` también es nuevo: proyectado vs ejecutado de la
+ * semana por planta (forma `CursoSemana`).
  */
 
 export const httpRepositories: Repositories = {
   plantas: {
+    listar: () => apiRequest<Planta[]>("/plantas"),
     getById: (id) => apiRequest<Planta>(`/plantas/${id}`),
   },
   frutas: {
@@ -40,6 +44,8 @@ export const httpRepositories: Repositories = {
     },
   },
   planes: {
+    listar: (filtro) => apiRequest<Plan[]>("/planes", { query: filtro }),
+    getById: (id) => apiRequest<Plan>(`/planes/${id}`),
     getVigente: async (q) => {
       const planes = await apiRequest<Plan[]>("/planes", { query: q })
       return planes[0] ?? null
@@ -48,5 +54,17 @@ export const httpRepositories: Repositories = {
       apiRequest<PlanCalculado>("/planes/simular", { method: "POST", body: input }),
     aplicar: (input) => apiRequest<Plan>("/planes", { method: "POST", body: input }),
     enviar: (planId) => apiRequest<Plan>(`/planes/${planId}/enviar`, { method: "POST" }),
+    aprobar: (planId) => apiRequest<Plan>(`/planes/${planId}/aprobar`, { method: "POST" }),
+    rechazar: (planId, comentario) =>
+      apiRequest<Plan>(`/planes/${planId}/rechazar`, {
+        method: "POST",
+        body: { comentarioAprobacion: comentario },
+      }),
+  },
+  curso: {
+    getSemana: async (q) => {
+      const curso = await apiRequest<CursoSemana | null>("/jornadas/curso", { query: q })
+      return curso?.dias.length ? curso : null
+    },
   },
 }
