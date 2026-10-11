@@ -9,17 +9,19 @@ import { PlanHeader } from "./plan-header"
 import { PlanOficialSection } from "./plan-oficial-section"
 import { PlanPasos } from "./plan-pasos"
 import { ProgramaComercialCard, ProyeccionCosechaCard } from "./proyecciones-cards"
-import { SimulacionSection } from "./simulacion/simulacion-section"
+import { CreateOfficialPlan } from "./create-official-plan"
+import { planEditable } from "../lib/plan-comparator"
 
 interface PlanSemanalViewProps {
   data: PlanSemanalData
   user: Usuario
+  readOnly?: boolean
 }
 
 /** Planificador · Plan semanal. */
-export function PlanSemanalView({ data, user }: PlanSemanalViewProps) {
-  const { query, planta, fruta, cosecha, comercial, plan, erroresCarga, simulacionInicial } = data
-  const canGestionar = can(user.rol, "plan:gestionar")
+export function PlanSemanalView({ data, user, readOnly = false }: PlanSemanalViewProps) {
+  const { query, planta, fruta, cosecha, comercial, plan, erroresCarga } = data
+  const canGestionar = !readOnly && can(user.rol, "plan:gestionar")
   const cosechaLista = cosecha.length > 0
   const comercialLista = comercial.length > 0
   const proyeccionesListas = cosechaLista && comercialLista
@@ -83,8 +85,7 @@ export function PlanSemanalView({ data, user }: PlanSemanalViewProps) {
           <AlertTitle>El subgerente rechazó el plan</AlertTitle>
           <AlertDescription>
             <p>
-              {plan.comentarioAprobacion ?? "Sin comentario."} Ajusta la simulación y vuelve a
-              aplicarla.
+              {plan.comentarioAprobacion ?? "Sin comentario."} Revisa la configuración y vuelve a guardar el plan.
             </p>
           </AlertDescription>
         </Alert>
@@ -106,32 +107,21 @@ export function PlanSemanalView({ data, user }: PlanSemanalViewProps) {
             </p>
             <p>
               {canGestionar
-                ? "Usa los botones Importar Excel de las tarjetas de abajo para subir los archivos pendientes."
+                ? "Importa Excel o completa los formularios de abajo para registrar las proyecciones pendientes."
                 : "Solicita al planificador que suba los archivos pendientes."}{" "}
-              La simulación estará disponible cuando estén cargadas ambas proyecciones.
+              Podrás crear el plan cuando estén cargadas ambas proyecciones.
             </p>
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} />
+      <div className="grid grid-cols-1 gap-6">
         <ProgramaComercialCard comercial={comercial} query={query} canImport={canGestionar} />
+        <ProyeccionCosechaCard cosecha={cosecha} query={query} canImport={canGestionar} />
       </div>
 
-      {proyeccionesListas ? (
-        <SimulacionSection
-          query={query}
-          planta={planta}
-          defaults={defaults}
-          plan={plan}
-          initial={simulacionInicial}
-          canGestionar={canGestionar}
-          proyeccionesListas={proyeccionesListas}
-          configuracionLista={configuracionLista}
-        />
-      ) : null}
-      <PlanOficialSection plan={plan} defaults={defaults} />
+      {canGestionar && planEditable(plan) ? <CreateOfficialPlan query={query} existing={plan !== null} enabled={proyeccionesListas && configuracionLista && erroresCarga.length === 0} /> : null}
+      {plan ? <PlanOficialSection plan={plan} defaults={defaults} /> : null}
     </>
   )
 }

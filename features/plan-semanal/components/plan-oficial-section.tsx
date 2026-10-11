@@ -19,12 +19,12 @@ interface PlanOficialSectionProps {
   defaults: ParametrosPlanta
 }
 
-/** Paso 3 · Plan oficial guardado, con el personal por área y los valores finales. */
+/** Plan oficial guardado, con el personal por área y los valores finales. */
 export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Paso 3 · Plan oficial</CardTitle>
+        <CardTitle>Plan oficial</CardTitle>
         <CardDescription>
           {plan ? (
             <>
@@ -33,7 +33,7 @@ export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) 
               {describirCambios(plan.parametrosUsados, defaults)}
             </>
           ) : (
-            "Se crea al aplicar una simulación."
+            "Se crea con las proyecciones y los parámetros de la planta."
           )}
         </CardDescription>
       </CardHeader>
@@ -56,9 +56,8 @@ export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) 
               </EmptyMedia>
               <EmptyTitle>Aún no hay plan oficial</EmptyTitle>
               <EmptyDescription>
-                Completa las proyecciones y simula en el paso 2; cuando las cifras te convenzan,
-                pulsa «Aplicar como plan oficial». Recién ahí se guarda y se puede enviar a
-                aprobación.
+                Registra el programa comercial y la proyección de cosecha, y pulsa «Crear plan oficial».
+                Después podrás enviarlo a aprobación.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

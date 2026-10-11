@@ -6,11 +6,13 @@ import { ForbiddenError, runAction, type ActionResult } from "@/lib/action-resul
 import { can } from "@/lib/auth/permissions"
 import { getCurrentUser } from "@/lib/auth/session"
 import {
+  parametrosDe,
   ESCENARIOS_COSECHA,
   type CalcularPlanInput,
   type ImportarProyeccionResultado,
   type Plan,
   type PlanCalculado,
+  type GuardarProyeccionInput,
 } from "@/lib/domain"
 import { getRepositories } from "@/lib/repositories"
 import { parametrosSchema } from "@/lib/parametros"
@@ -101,5 +103,40 @@ export async function importarProyeccionAction(
     const resultado = await getRepositories().proyecciones.importar(data)
     revalidatePath(RUTA)
     return resultado
+  })
+}
+
+export async function guardarProyeccionAction(input: GuardarProyeccionInput): Promise<ActionResult<ImportarProyeccionResultado>> {
+  return runAction(async () => {
+    const schema = semanaSchema.extend({
+      tipo: z.enum(["COSECHA", "COMERCIAL"]),
+      registros: z.array(z.object({
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        cliente: z.string().trim().min(1).max(255).optional(),
+        pais: z.string().trim().min(2).max(100).optional(),
+        jabas: z.number().min(0).max(1e9),
+      })).min(1).max(500),
+    })
+    const data = schema.parse(input)
+    await assertPuedeGestionar(data.plantaId)
+    if (data.registros.some(r => data.tipo === "COSECHA" ? !r.fecha : !r.cliente || !r.pais)) {
+      throw new Error("Completa los registros de la proyección.")
+    }
+    const result = await getRepositories().proyecciones.guardar(data)
+    revalidatePath(RUTA)
+    return result
+  })
+}
+
+export async function crearPlanOficialAction(query: import("@/lib/domain").SemanaQuery): Promise<ActionResult<Plan>> {
+  return runAction(async () => {
+    const data = semanaSchema.parse(query)
+    await assertPuedeGestionar(data.plantaId)
+    const repos = getRepositories()
+    const planta = await repos.plantas.getById(data.plantaId)
+    if (!planta.configuradaAt) throw new ForbiddenError("Confirma la configuración de la planta antes de crear el plan.")
+    const plan = await repos.planes.aplicar({ ...data, escenarioCosecha: "PROYECTADA", parametros: parametrosSchema.parse(parametrosDe(planta)) })
+    revalidatePath(RUTA)
+    return plan
   })
 }

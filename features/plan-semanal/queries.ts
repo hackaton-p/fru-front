@@ -62,7 +62,7 @@ export interface PlanSemanalData {
   }
 }
 
-export async function getPlanSemanalData(query: SemanaQuery): Promise<PlanSemanalData> {
+export async function getPlanSemanalData(query: SemanaQuery, selectedPlan?: Plan): Promise<PlanSemanalData> {
   const repos = getRepositories()
   const erroresCarga: string[] = []
   const [plantaResult, frutaResult, cosechaResult, comercialResult, planResult] = await Promise.allSettled([
@@ -70,7 +70,7 @@ export async function getPlanSemanalData(query: SemanaQuery): Promise<PlanSemana
     repos.frutas.getById(query.frutaId),
     repos.proyecciones.getCosecha(query),
     repos.proyecciones.getComercial(query),
-    repos.planes.getVigente(query),
+    selectedPlan ? Promise.resolve(selectedPlan) : repos.planes.getVigente(query),
   ])
 
   const registrarError = (result: PromiseRejectedResult, recurso: string) => {
@@ -135,18 +135,6 @@ export async function getPlanSemanalData(query: SemanaQuery): Promise<PlanSemana
     }
   } else {
     simulacionInicial = { escenario: "PROYECTADA", parametros: defaults, resultado: resultadoVacio }
-    if (planta.configuradaAt && cosecha.length > 0 && comercial.length > 0) {
-      try {
-        simulacionInicial.resultado = await repos.planes.simular({
-          ...query,
-          escenarioCosecha: "PROYECTADA",
-          parametros: defaults,
-        })
-      } catch (error) {
-        const detalle = error instanceof Error ? error.message : "Error desconocido"
-        erroresCarga.push(`No se pudo calcular la simulación inicial: ${detalle}`)
-      }
-    }
   }
 
   return { query, planta, fruta, cosecha, comercial, plan, erroresCarga, simulacionInicial }

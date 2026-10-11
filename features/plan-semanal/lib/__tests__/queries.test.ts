@@ -35,20 +35,37 @@ describe("Carga del planificador", () => {
 
     const data = await getPlanSemanalData(query)
 
-    expect(data.simulacionInicial).toBeNull()
+    expect(data.simulacionInicial.resultado.dias).toEqual([])
     expect(data.cosecha).toEqual(cosecha)
     expect(data.comercial).toEqual(comercial)
     expect(repos.planes.simular.mock.calls.length).toBe(0)
   })
 
-  it("simula cuando ambas proyecciones están cargadas", async () => {
+  it("no simula automáticamente aunque ambas proyecciones estén cargadas", async () => {
+    repos.plantas.getById.mockResolvedValue({ configuradaAt: "2026-10-11T00:00:00Z" })
     repos.proyecciones.getCosecha.mockResolvedValue([{ jabas: 100 }])
     repos.proyecciones.getComercial.mockResolvedValue([{ jabas: 100 }])
     repos.planes.simular.mockResolvedValue({ dias: [] })
 
     const data = await getPlanSemanalData(query)
 
-    expect(data.simulacionInicial?.resultado).toEqual({ dias: [] })
-    expect(repos.planes.simular).toHaveBeenCalledWith(expect.objectContaining(query))
+    expect(data.simulacionInicial.resultado.dias).toEqual([])
+    expect(repos.planes.simular.mock.calls.length).toBe(0)
+  })
+  it("muestra el plan seleccionado sin sustituirlo por otro de la misma semana", async () => {
+    repos.proyecciones.getCosecha.mockResolvedValue([])
+    repos.proyecciones.getComercial.mockResolvedValue([])
+    const empty = await getPlanSemanalData(query)
+    const selected = {
+      ...empty.simulacionInicial.resultado,
+      id: 7, plantaId: 1, frutaId: 1, anio: 2026, semana: 42,
+      estado: "BORRADOR" as const, updatedAt: "2026-10-11T00:00:00Z",
+      enviadoAt: null, comentarioAprobacion: null,
+    }
+    repos.planes.getVigente.mockClear()
+    const data = await getPlanSemanalData(query, selected)
+    expect(data.plan?.id).toBe(7)
+    expect(data.simulacionInicial.resultado).toEqual(selected)
+    expect(repos.planes.getVigente.mock.calls.length).toBe(0)
   })
 })

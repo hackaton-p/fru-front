@@ -7,6 +7,7 @@ import type {
   Fruta,
   IniciarJornadaInput,
   ImportarProyeccionInput,
+  GuardarProyeccionInput,
   ImportarProyeccionResultado,
   Jornada,
   JornadaDelDia,
@@ -38,6 +39,7 @@ export interface FrutasRepository {
 }
 
 export interface ProyeccionesRepository {
+  guardar(input: GuardarProyeccionInput): Promise<ImportarProyeccionResultado>
   getCosecha(query: SemanaQuery): Promise<ProyeccionCosechaDia[]>
   getComercial(query: SemanaQuery): Promise<ProyeccionComercialCliente[]>
   importar(input: ImportarProyeccionInput): Promise<ImportarProyeccionResultado>

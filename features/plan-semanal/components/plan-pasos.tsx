@@ -10,14 +10,6 @@ interface PlanPasosProps {
 
 /** Flujo para iniciar un plan semanal a partir de sus proyecciones. */
 export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, planCreado }: PlanPasosProps) {
-  const proyeccionesListas = cosechaLista && comercialLista
-  const detalleProyecciones = proyeccionesListas
-    ? "Cosecha y programa comercial listos"
-    : !cosechaLista && !comercialLista
-      ? "Carga la proyección de cosecha y el plan comercial"
-      : cosechaLista
-        ? "Falta cargar el programa comercial"
-        : "Falta cargar la proyección de cosecha"
   const pasos = [
     {
       titulo: "Configurar planta",
@@ -27,24 +19,20 @@ export function PlanPasos({ configuracionLista, cosechaLista, comercialLista, pl
       listo: configuracionLista,
     },
     {
-      titulo: "Revisar proyecciones",
-      detalle: detalleProyecciones,
-      listo: proyeccionesListas,
+      titulo: "Cargar programa comercial",
+      detalle: comercialLista ? "Programa comercial registrado" : "Importa Excel o agrega registros por cliente",
+      listo: comercialLista,
     },
     {
-      titulo: "Simular el plan semanal",
-      detalle: planCreado
-        ? "Simulación aplicada al plan oficial"
-        : configuracionLista && proyeccionesListas
-          ? "Prueba escenarios y ajusta parámetros"
-          : "Se habilita al completar los pasos 1 y 2",
-      listo: planCreado,
+      titulo: "Cargar proyección de cosecha",
+      detalle: cosechaLista ? "Proyección de cosecha registrada" : "Importa Excel o distribuye el total entre los días",
+      listo: cosechaLista,
     },
     {
       titulo: "Crear plan oficial",
       detalle: planCreado
         ? "Plan listo; puedes enviarlo a aprobación"
-        : "Guarda la simulación; después podrás enviarlo a aprobación",
+        : "Crea el plan con los parámetros de la planta y envíalo a aprobación",
       listo: planCreado,
     },
   ]

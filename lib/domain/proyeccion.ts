@@ -30,3 +30,8 @@ export interface ImportarProyeccionInput extends SemanaQuery {
 export interface ImportarProyeccionResultado {
   registros: number
 }
+
+export interface GuardarProyeccionInput extends SemanaQuery {
+  tipo: TipoProyeccion
+  registros: { fecha?: string; cliente?: string; pais?: string; jabas: number }[]
+}

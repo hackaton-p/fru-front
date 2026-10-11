@@ -1,6 +1,6 @@
 import "server-only"
 import { ApiError } from "@/lib/api/errors"
-import type { CalcularPlanInput, Plan, PlanCalculado, Planta, SemanaQuery } from "@/lib/domain"
+import type { CalcularPlanInput, Plan, PlanCalculado, Planta, SemanaQuery, GuardarProyeccionInput } from "@/lib/domain"
 import { parametrosSchema } from "@/lib/parametros"
 import type { Repositories } from "../types"
 import { cursoMock } from "./curso-data"
@@ -25,10 +25,13 @@ const store = globalThis as unknown as {
   __mockPlanes?: Map<string, Plan>
   __mockPlanId?: number
   __mockJornadas?: JornadasStore
+  __mockProjections?: Map<string, GuardarProyeccionInput>
 }
 // Copia editable desde "Configuración de planta"; los planes semilla usan los valores originales.
 const plantas = (store.__mockPlantas ??= new Map(PLANTAS.map((p) => [p.id, { ...p }])))
 const planes = (store.__mockPlanes ??= new Map(planesSemilla().map((p) => [key(p), p])))
+const projections: Map<string, GuardarProyeccionInput> = (store.__mockProjections ??= new Map<string, GuardarProyeccionInput>())
+const projectionKey = (q: SemanaQuery, type: string) => `${q.plantaId}-${q.frutaId}-${q.anio}-${q.semana}-${type}`
 store.__mockPlanId ??= ULTIMO_ID_SEMILLA
 const jornadas = crearJornadasMock(
   planes,
@@ -78,8 +81,8 @@ function calcular(input: CalcularPlanInput): PlanCalculado {
     throw new ApiError("Confirma la configuración de la planta antes de planificar.", 409)
   }
   return calcularPlan({
-    cosecha: cosechaMock(input.plantaId, input.semana),
-    totalComercial: comercialMock(input.plantaId).reduce((s, c) => s + c.jabas, 0),
+    cosecha: projections.get(projectionKey(input, "COSECHA"))?.registros.map(r => ({ fecha: r.fecha!, jabas: r.jabas })) ?? cosechaMock(input.plantaId, input.semana),
+    totalComercial: projections.get(projectionKey(input, "COMERCIAL"))?.registros.reduce((s, r) => s + r.jabas, 0) ?? comercialMock(input.plantaId).reduce((s, c) => s + c.jabas, 0),
     parametros: input.parametros,
     parametrosModificados: EDITABLES.some((k) => input.parametros[k] !== planta[k]),
     escenarioCosecha: input.escenarioCosecha,
@@ -120,12 +123,22 @@ export const mockRepositories: Repositories = {
     },
   },
   proyecciones: {
+    async guardar(input) {
+      const projectionId = projectionKey(input, input.tipo)
+      if (projections.has(projectionId)) throw new ApiError("La proyección ya fue registrada.", 409)
+      projections.set(projectionId, input)
+      return { registros: input.registros.length }
+    },
     async getCosecha(q) {
       await delay()
+      const saved = projections.get(projectionKey(q, "COSECHA"))
+      if (saved) return saved.registros.map(r => ({ fecha: r.fecha!, jabas: r.jabas }))
       return cosechaMock(q.plantaId, q.semana)
     },
     async getComercial(q) {
       await delay()
+      const saved = projections.get(projectionKey(q, "COMERCIAL"))
+      if (saved) return saved.registros.map((r, i) => ({ clienteId: i + 1, cliente: r.cliente!, jabas: r.jabas }))
       return comercialMock(q.plantaId)
     },
     async importar({ archivo }) {
