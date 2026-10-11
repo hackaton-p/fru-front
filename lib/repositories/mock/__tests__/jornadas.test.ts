@@ -125,7 +125,7 @@ describe("jornadas mock (flujo del jefe de turno)", () => {
     expect([...planes.values()].find((p) => p.id === plan.id)!.estado).toBe("CERRADO")
 
     // El curso del subgerente toma el viernes entero de la jornada cerrada.
-    const curso = cursoMock({ plantaId: 1, frutaId: 1, semana: 41 }, new Date(), (fecha) =>
+    const curso = cursoMock({ plantaId: 1, frutaId: 1, anio: 2026, semana: 41 }, new Date(), (fecha) =>
       cerradaDe(plan, fecha),
     )!
     const viernes = curso.dias.find((d) => d.fecha === dia.fecha)!

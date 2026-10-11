@@ -85,7 +85,12 @@ export function crearJornadasMock(
   const diaCerrado = (plan: Plan, fecha: string) => {
     const jornada = store.jornadas.get(keyJornada(plan.id, fecha))
     if (jornada) return jornada.estado === "CERRADA"
-    const curso = cursoMock({ plantaId: plan.plantaId, frutaId: plan.frutaId, semana: plan.semana })
+    const curso = cursoMock({
+      plantaId: plan.plantaId,
+      frutaId: plan.frutaId,
+      anio: plan.anio,
+      semana: plan.semana,
+    })
     return curso?.dias.find((d) => d.fecha === fecha)?.jabasEjecutadas != null
   }
 

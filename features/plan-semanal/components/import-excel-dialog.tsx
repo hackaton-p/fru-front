@@ -69,6 +69,7 @@ export function ImportExcelDialog({ tipo, query }: ImportExcelDialogProps) {
           <input type="hidden" name="tipo" value={tipo} />
           <input type="hidden" name="plantaId" value={query.plantaId} />
           <input type="hidden" name="frutaId" value={query.frutaId} />
+          <input type="hidden" name="anio" value={query.anio} />
           <input type="hidden" name="semana" value={query.semana} />
           <Field>
             <FieldLabel htmlFor={inputId}>Archivo Excel</FieldLabel>

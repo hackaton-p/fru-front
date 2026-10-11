@@ -38,6 +38,7 @@ export function resolverSemanaQuery(
   return {
     plantaId: user.plantaId ?? sp.planta ?? PLANTA_POR_DEFECTO,
     frutaId: sp.fruta ?? FRUTA_POR_DEFECTO,
+    anio: isoWeek(hoy).year,
     semana: sp.semana ?? (isoWeek(hoy).week % 52) + 1,
   }
 }

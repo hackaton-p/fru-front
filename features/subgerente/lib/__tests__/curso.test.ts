@@ -3,7 +3,7 @@ import { cursoMock } from "@/lib/repositories/mock/curso-data"
 import { filasCurso, lecturaSemana, resumirCurso, type FilaCurso } from "../curso"
 
 const HOY = new Date("2026-10-10T12:00:00Z")
-const curso = cursoMock({ plantaId: 1, frutaId: 1, semana: 41 }, HOY)!
+const curso = cursoMock({ plantaId: 1, frutaId: 1, anio: 2026, semana: 41 }, HOY)!
 
 function fila(filas: FilaCurso[], label: string) {
   const f = filas.find((x) => x.tipo === "dato" && x.label === label)

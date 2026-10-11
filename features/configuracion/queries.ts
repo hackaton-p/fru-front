@@ -29,7 +29,12 @@ export async function getConfiguracionData(user: Usuario, hoy: Date): Promise<Co
   const plantas = await repos.plantas.listar()
   const cosechas = await Promise.all(
     plantas.map((p) =>
-      repos.proyecciones.getCosecha({ plantaId: p.id, frutaId: FRUTA_POR_DEFECTO, semana }),
+      repos.proyecciones.getCosecha({
+        plantaId: p.id,
+        frutaId: FRUTA_POR_DEFECTO,
+        anio: isoWeek(hoy).year,
+        semana,
+      }),
     ),
   )
   const ejemplos = Object.fromEntries(

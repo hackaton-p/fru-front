@@ -35,13 +35,20 @@ export function useSimulacion({ query, defaults, initial }: UseSimulacionArgs) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const { plantaId, frutaId, semana } = query
+  const { plantaId, frutaId, anio, semana } = query
   const input = useMemo<CalcularPlanInput | null>(
     () =>
       parametros.values
-        ? { plantaId, frutaId, semana, escenarioCosecha: escenario, parametros: parametros.values }
+        ? {
+            plantaId,
+            frutaId,
+            anio,
+            semana,
+            escenarioCosecha: escenario,
+            parametros: parametros.values,
+          }
         : null,
-    [plantaId, frutaId, semana, escenario, parametros.values],
+    [plantaId, frutaId, anio, semana, escenario, parametros.values],
   )
   const inputKey = input ? JSON.stringify(input) : null
 
