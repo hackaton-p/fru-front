@@ -51,6 +51,7 @@ export interface PlanesFiltro {
 }
 
 export interface PlanesRepository {
+  descartar(id: number): Promise<void>
   /** Planes de todas las semanas, del más reciente al más antiguo. */
   listar(filtro?: PlanesFiltro): Promise<Plan[]>
   getById(id: number): Promise<Plan>

@@ -22,7 +22,7 @@ interface ProyeccionCardProps {
 
 function ProyeccionCard({ title, description, action, children }: ProyeccionCardProps) {
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -64,7 +64,7 @@ export function ProyeccionCosechaCard({ cosecha, query, canImport }: CosechaCard
           : undefined
       }
     >
-      {canImport && cosecha.length === 0 ? <HarvestForm key={`${query.plantaId}-${query.frutaId}-${query.anio}-${query.semana}`} query={query} /> : <DataTable
+      {canImport && cosecha.length === 0 ? <HarvestForm key={`${query.plantaId}-${query.frutaId}-${query.anio}-${query.semana}-${query.inicio}-${query.fechas?.join(",")}`} query={query} /> : <DataTable
         caption="Proyección de cosecha por día"
         columns={columns}
         rows={cosecha}

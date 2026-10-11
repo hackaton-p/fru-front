@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
-import { addDays, mondayOfIsoWeek, toIsoDate } from "@/lib/dates"
+import { planningDates } from "@/lib/dates"
 import { formatDia } from "@/lib/format"
 import type { SemanaQuery } from "@/lib/domain"
 import { guardarProyeccionAction } from "../actions"
@@ -17,25 +17,33 @@ import { distributeHarvest } from "../lib/harvest-distribution"
 export function HarvestForm({ query }: { query: SemanaQuery }) {
   const router = useRouter()
   const [total, setTotal] = useState("")
-  const [values, setValues] = useState<string[]>(Array(7).fill(""))
+  const dates = planningDates(query)
+  const dayCount = dates.length
+  const [values, setValues] = useState<string[]>(Array(dayCount).fill(""))
   const [automatic, setAutomatic] = useState(true)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const dates = Array.from({ length: 7 }, (_, i) => toIsoDate(addDays(mondayOfIsoWeek(query.anio, query.semana), i)))
-  const clear = () => { setTotal(""); setValues(Array(7).fill("")); setAutomatic(true); setError(null) }
+  const clear = () => { setTotal(""); setValues(Array(dayCount).fill("")); setAutomatic(true); setError(null) }
   const changeTotal = (value: string) => {
+    if (!/^\d*$/.test(value)) return
     setTotal(value)
     if (automatic || values.every(v => v === "")) {
       setAutomatic(true)
-      setValues(value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0
-        ? distributeHarvest(Number(value)).map(String) : Array(7).fill(""))
+      setValues(value !== "" && Number.isSafeInteger(Number(value)) && Number(value) >= 0
+        ? distributeHarvest(Number(value), dayCount).map(String) : Array(dayCount).fill(""))
     }
+  }
+  const integerKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if ([".", ",", "e", "E", "+", "-"].includes(event.key)) event.preventDefault()
   }
   const save = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError(null)
+    if (total === "" || !Number.isSafeInteger(Number(total)) || values.some(value => !Number.isInteger(Number(value || 0)) || Number(value || 0) < 0 || Number(value || 0) > 1e9)) {
+      setError("La cosecha solo acepta jabas enteras, sin decimales."); return
+    }
     const sum = values.reduce((s, v) => s + Number(v || 0), 0)
-    if (Math.round(sum * 100) !== Math.round(Number(total) * 100)) { setError("El total debe coincidir con la suma de los días. Ajusta los días o limpia el formulario para distribuir de nuevo."); return }
+    if (sum !== Number(total)) { setError("El total debe coincidir con la suma de los días. Ajusta los días o limpia el formulario para distribuir de nuevo."); return }
     startTransition(async () => {
       const result = await guardarProyeccionAction({ ...query, tipo: "COSECHA", registros: dates.map((fecha, i) => ({ fecha, jabas: Number(values[i] || 0) })) })
       if (result.ok) { toast.success("Proyección de cosecha guardada"); router.refresh() }
@@ -43,10 +51,11 @@ export function HarvestForm({ query }: { query: SemanaQuery }) {
     })
   }
   return <form onSubmit={save} className="space-y-4">
-    <div className="space-y-2"><Label htmlFor="harvest-total">Total semanal (jabas)</Label><Input id="harvest-total" type="number" min="0" max="7000000000" step="0.01" required value={total} onChange={e => changeTotal(e.target.value)} disabled={pending} /><p className="text-sm text-muted-foreground">Ingresa el total para repartirlo entre los siete días. Puedes ajustar cada día; el total se actualizará con tus cambios.</p></div>
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{dates.map((date, i) => <div key={date} className="space-y-2"><Label htmlFor={`harvest-${date}`}>{formatDia(date)}</Label><Input id={`harvest-${date}`} type="number" min="0" max="1000000000" step="0.01" value={values[i]} disabled={pending} placeholder="0" onChange={e => {
+    <div className="space-y-2"><Label htmlFor="harvest-total">Total semanal (jabas)</Label><Input id="harvest-total" type="number" inputMode="numeric" min="0" max={dayCount * 1e9} step="1" required value={total} onKeyDown={integerKey} onChange={e => changeTotal(e.target.value)} disabled={pending} /><p className="text-sm text-muted-foreground">Ingresa el total en jabas enteras para repartirlo entre los {dayCount} días. Puedes ajustar cada día; el total se actualizará con tus cambios.</p></div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{dates.map((date, i) => <div key={date} className="space-y-2"><Label htmlFor={`harvest-${date}`}>{formatDia(date)}</Label><Input id={`harvest-${date}`} type="number" inputMode="numeric" min="0" max="1000000000" step="1" value={values[i]} disabled={pending} placeholder="0" onKeyDown={integerKey} onChange={e => {
+      if (!/^\d*$/.test(e.target.value)) return
       const next = [...values]; next[i] = e.target.value; setValues(next); setAutomatic(false)
-      setTotal(next.some(v => v !== "") ? String(Math.round(next.reduce((s, v) => s + Number(v || 0), 0) * 100) / 100) : "")
+      setTotal(next.some(v => v !== "") ? String(next.reduce((s, v) => s + Number(v || 0), 0)) : "")
     }} /></div>)}</div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     <div className="flex gap-2"><Button type="submit" disabled={pending || total === ""}>{pending ? "Guardando…" : "Guardar proyección"}</Button><Button type="button" variant="outline" onClick={clear} disabled={pending}>Limpiar</Button></div>
@@ -79,9 +88,9 @@ export function CommercialFormDialog({ query }: { query: SemanaQuery }) {
     else formRef.current?.reportValidity()
   }
   const reset = () => { setRows([EMPTY_ROW]); setError(null); focusField("cliente", 0) }
-  return <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) { setRows([EMPTY_ROW]); setError(null) } }}>
-    <DialogTrigger asChild><Button variant="outline"><Plus aria-hidden />Agregar registros</Button></DialogTrigger>
-    <DialogContent className="flex max-h-[85vh] flex-col gap-4 sm:max-w-2xl" onOpenAutoFocus={e => { e.preventDefault(); focusField("cliente", 0) }}>
+  return <Dialog open={open} onOpenChange={(o: boolean) => { setOpen(o); if (!o) { setRows([EMPTY_ROW]); setError(null) } }}>
+    <DialogTrigger asChild><Button variant="outline" size="icon" aria-label="Agregar registros al programa comercial" title="Agregar registros al programa comercial"><Plus aria-hidden /></Button></DialogTrigger>
+    <DialogContent className="flex max-h-[85vh] flex-col gap-4 sm:max-w-2xl" onOpenAutoFocus={(e: Event) => { e.preventDefault(); focusField("cliente", 0) }}>
       <DialogHeader><DialogTitle>Agregar programa comercial</DialogTitle><DialogDescription>Semana {query.semana} de {query.anio}. Los registros no podrán editarse después de guardar.</DialogDescription></DialogHeader>
       <form ref={formRef} className="flex min-h-0 flex-1 flex-col gap-4" onSubmit={e => {
         e.preventDefault(); setError(null)

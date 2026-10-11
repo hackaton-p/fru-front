@@ -1,6 +1,6 @@
 import { ClipboardList } from "lucide-react"
 import { ParametrosResumen, describirCambios } from "@/components/shared/parametros-resumen"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -13,18 +13,20 @@ import { ESCENARIO_LABEL } from "../lib/escenarios"
 import { LocalDateTime } from "./local-date-time"
 import { PlanAreasTable } from "./plan-dias-tables"
 import { PlanKpis } from "./plan-kpis"
+import { EnviarAprobacionButton } from "./enviar-aprobacion-button"
 
 interface PlanOficialSectionProps {
   plan: Plan | null
   defaults: ParametrosPlanta
+  canEnviar?: boolean
 }
 
 /** Plan oficial guardado, con el personal por área y los valores finales. */
-export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) {
+export function PlanOficialSection({ plan, defaults, canEnviar = false }: PlanOficialSectionProps) {
   return (
-    <Card>
+    <Card id="planificacion-generada" className="scroll-mt-20">
       <CardHeader>
-        <CardTitle>Plan oficial</CardTitle>
+        <CardTitle>Planificación generada</CardTitle>
         <CardDescription>
           {plan ? (
             <>
@@ -56,13 +58,14 @@ export function PlanOficialSection({ plan, defaults }: PlanOficialSectionProps) 
               </EmptyMedia>
               <EmptyTitle>Aún no hay plan oficial</EmptyTitle>
               <EmptyDescription>
-                Registra el programa comercial y la proyección de cosecha, y pulsa «Crear plan oficial».
+                Registra el programa comercial y la proyección de cosecha, y pulsa «Ver planificación».
                 Después podrás enviarlo a aprobación.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}
       </CardContent>
+      {canEnviar && plan && <CardFooter className="justify-end"><EnviarAprobacionButton planId={plan.id} disabled={plan.estado !== "BORRADOR"} /></CardFooter>}
     </Card>
   )
 }

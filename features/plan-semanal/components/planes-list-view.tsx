@@ -12,6 +12,7 @@ import type { Plan, Planta } from "@/lib/domain"
 import { ESTADOS_PLAN } from "@/lib/domain"
 import { formatInt, formatRangoFechas } from "@/lib/format"
 import { planEditable } from "../lib/plan-comparator"
+import { DiscardPlanButton } from "./discard-plan-button"
 
 export function PlanificadorListView({ planes, plantas, canGestionar }: {
   planes: Plan[]; plantas: Planta[]; canGestionar: boolean
@@ -26,6 +27,7 @@ export function PlanificadorListView({ planes, plantas, canGestionar }: {
   const actions = (p: Plan) => <div className="flex flex-wrap gap-2">
     <Button asChild variant="outline" size="sm"><Link href={`/planificador?vista=detalle&plan=${p.id}`} aria-label={`Ver plan ${p.id}`}><Eye aria-hidden />Ver</Link></Button>
     {canGestionar && planEditable(p) && <Button asChild variant="outline" size="sm"><Link href={`/planificador?vista=editar&plan=${p.id}`} aria-label={`Modificar plan ${p.id}`}><Pencil aria-hidden />Modificar</Link></Button>}
+    {canGestionar && ((p.estado === "BORRADOR" && !p.fechaEnvio) || p.estado === "RECHAZADO") && <DiscardPlanButton planId={p.id} />}
   </div>
   const columns: DataTableColumn<Plan>[] = [
     { id: "plan", header: "Planificación", cell: p => <div className="space-y-1"><Link className="font-semibold hover:underline" href={`/planificador?vista=detalle&plan=${p.id}`}>{name(p.plantaId)} · Semana {p.semana}, {p.anio}</Link><p className="text-xs text-muted-foreground">Plan #{p.id}</p><div className="flex flex-wrap gap-2 md:hidden"><EstadoPlanBadge estado={p.estado} />{actions(p)}</div></div> },

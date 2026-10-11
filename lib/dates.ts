@@ -33,3 +33,16 @@ export function mondayOfIsoWeek(year: number, week: number): Date {
   const jan4Day = jan4.getUTCDay() || 7
   return addDays(jan4, (week - 1) * 7 - (jan4Day - 1))
 }
+
+export function planningDates(query: { fechas?: string[]; inicio?: string; cantidadDias?: number; anio: number; semana: number }): string[] {
+  if (query.fechas) return [...query.fechas].sort()
+  const start = query.inicio ? parseIsoDate(query.inicio) : mondayOfIsoWeek(query.anio, query.semana)
+  return Array.from({ length: query.cantidadDias ?? 5 }, (_, i) => toIsoDate(addDays(start, i)))
+}
+
+export function nextPlanningMonday(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now)
+  const value = (type: string) => Number(parts.find(part => part.type === type)!.value)
+  const today = new Date(Date.UTC(value("year"), value("month") - 1, value("day")))
+  return toIsoDate(addDays(today, 8 - (today.getUTCDay() || 7)))
+}

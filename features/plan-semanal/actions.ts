@@ -16,11 +16,15 @@ import {
 } from "@/lib/domain"
 import { getRepositories } from "@/lib/repositories"
 import { parametrosSchema } from "@/lib/parametros"
+import { nextPlanningMonday, planningDates } from "@/lib/dates"
 
 const RUTA = "/planificador"
 const MAX_EXCEL_BYTES = 10 * 1024 * 1024
 
 const semanaSchema = z.object({
+  inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  cantidadDias: z.number().int().min(1).max(7).optional(),
+  fechas: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1).max(7).optional(),
   plantaId: z.number().int().positive(),
   frutaId: z.number().int().positive(),
   anio: z.number().int().min(2000).max(2100),
@@ -28,6 +32,7 @@ const semanaSchema = z.object({
 })
 
 const calcularSchema = semanaSchema.extend({
+  planId: z.number().int().positive().optional(),
   escenarioCosecha: z.enum(ESCENARIOS_COSECHA),
   parametros: parametrosSchema,
 })
@@ -116,6 +121,9 @@ export async function guardarProyeccionAction(input: GuardarProyeccionInput): Pr
         pais: z.string().trim().min(2).max(100).optional(),
         jabas: z.number().min(0).max(1e9),
       })).min(1).max(500),
+    }).refine(data => data.tipo !== "COSECHA" || data.registros.every(row => Number.isInteger(row.jabas)), {
+      message: "La proyección de cosecha solo acepta jabas enteras, sin decimales.",
+      path: ["registros"],
     })
     const data = schema.parse(input)
     await assertPuedeGestionar(data.plantaId)
@@ -128,15 +136,29 @@ export async function guardarProyeccionAction(input: GuardarProyeccionInput): Pr
   })
 }
 
-export async function crearPlanOficialAction(query: import("@/lib/domain").SemanaQuery): Promise<ActionResult<Plan>> {
+export async function crearPlanOficialAction(query: import("@/lib/domain").SemanaQuery, planId?: number): Promise<ActionResult<Plan>> {
   return runAction(async () => {
     const data = semanaSchema.parse(query)
     await assertPuedeGestionar(data.plantaId)
     const repos = getRepositories()
     const planta = await repos.plantas.getById(data.plantaId)
     if (!planta.configuradaAt) throw new ForbiddenError("Confirma la configuración de la planta antes de crear el plan.")
-    const plan = await repos.planes.aplicar({ ...data, escenarioCosecha: "PROYECTADA", parametros: parametrosSchema.parse(parametrosDe(planta)) })
+    const id = planId === undefined ? undefined : z.number().int().positive().parse(planId)
+    if (id === undefined && planningDates(data)[0] < nextPlanningMonday(new Date())) throw new ForbiddenError("Solo puedes crear planificaciones para la próxima semana en adelante.")
+    const plan = await repos.planes.aplicar({ ...data, planId: id, escenarioCosecha: "PROYECTADA", parametros: parametrosSchema.parse(parametrosDe(planta)) })
     revalidatePath(RUTA)
     return plan
+  })
+}
+
+export async function descartarPlanAction(planId: number): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const id = z.number().int().positive().parse(planId)
+    const repos = getRepositories()
+    const plan = await repos.planes.getById(id)
+    await assertPuedeGestionar(plan.plantaId)
+    await repos.planes.descartar(id)
+    revalidatePath(RUTA)
+    revalidatePath("/subgerente/planes")
   })
 }

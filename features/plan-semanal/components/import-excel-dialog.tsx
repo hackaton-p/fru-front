@@ -53,9 +53,8 @@ export function ImportExcelDialog({ tipo, query }: ImportExcelDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <FileSpreadsheet data-icon="inline-start" aria-hidden />
-          Importar Excel
+        <Button variant="outline" size="icon" aria-label={`${TITULO[tipo]} desde Excel`} title={`${TITULO[tipo]} desde Excel`}>
+          <FileSpreadsheet aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent>

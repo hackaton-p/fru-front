@@ -13,7 +13,7 @@ const repos = vi.hoisted(() => ({
 }))
 vi.mock("@/lib/repositories", () => ({ getRepositories: () => repos }))
 
-import { getPlanSemanalData } from "../../queries"
+import { getPlanSemanalData, resolverSemanaQuery } from "../../queries"
 
 const query = { plantaId: 1, frutaId: 1, anio: 2026, semana: 42 }
 
@@ -25,6 +25,28 @@ beforeEach(() => {
 })
 
 describe("Carga del planificador", () => {
+  it.each(["2026-10-05", "2026-10-12"])("rechaza fechas antiguas en la URL (%s)", inicio => {
+    const data = resolverSemanaQuery({ inicio, anio: "2026", semana: "41", fechas: `${inicio},2026-10-14` }, { id: 1, nombre: "Planificador", rol: "PLANIFICADOR", plantaId: 1 }, new Date("2026-10-12T12:00:00Z"))
+    expect(data.inicio).toBe("2026-10-19")
+    expect(data.semana).toBe(43)
+    expect(data.fechas).toBeUndefined()
+  })
+  it.each([["2026-10-20", 2], ["2026-10-21", 3], ["2026-10-22", 4], ["2026-10-23", 5], ["2026-10-24", 6]])("resuelve el rango hasta %s con %i días", (fin, cantidadDias) => {
+    const fechas = Array.from({ length: cantidadDias }, (_, i) => `2026-10-${19 + i}`)
+    const data = resolverSemanaQuery({ inicio: "2026-10-19", fechas: fechas.join(","), dias: "7" }, { id: 1, nombre: "Planificador", rol: "PLANIFICADOR", plantaId: 1 }, new Date("2026-10-11T12:00:00Z"))
+    expect(data.inicio).toBe("2026-10-19")
+    expect(data.semana).toBe(43)
+    expect(data.cantidadDias).toBe(cantidadDias)
+    expect(data.fechas).toEqual(fechas)
+  })
+  it("conserva los días salteados y obtiene la semana desde el lunes", () => {
+    const data = resolverSemanaQuery({ inicio: "2026-12-28", fechas: "2027-01-02,2026-12-30,2026-12-28", anio: "2027", semana: "1" }, { id: 1, nombre: "Planificador", rol: "PLANIFICADOR", plantaId: 1 }, new Date("2026-10-11T12:00:00Z"))
+    expect(data).toMatchObject({ anio: 2026, semana: 53, cantidadDias: 3, fechas: ["2026-12-28", "2026-12-30", "2027-01-02"] })
+  })
+  it("no acepta una selección que omite el lunes", () => {
+    const data = resolverSemanaQuery({ inicio: "2026-10-19", fechas: "2026-10-20,2026-10-21" }, { id: 1, nombre: "Planificador", rol: "PLANIFICADOR", plantaId: 1 }, new Date("2026-10-11T12:00:00Z"))
+    expect(data.fechas).toBeUndefined()
+  })
   it.each([
     [[], []],
     [[{ fecha: "2026-10-12", jabas: 100 }], []],
@@ -66,6 +88,14 @@ describe("Carga del planificador", () => {
     const data = await getPlanSemanalData(query, selected)
     expect(data.plan?.id).toBe(7)
     expect(data.simulacionInicial.resultado).toEqual(selected)
+    expect(repos.planes.getVigente.mock.calls.length).toBe(0)
+  })
+  it("inicia una planificación nueva aunque ya exista otra para esa semana", async () => {
+    repos.proyecciones.getCosecha.mockResolvedValue([])
+    repos.proyecciones.getComercial.mockResolvedValue([])
+    repos.planes.getVigente.mockResolvedValue({ id: 99 })
+    const data = await getPlanSemanalData(query, undefined, true)
+    expect(data.plan).toBeNull()
     expect(repos.planes.getVigente.mock.calls.length).toBe(0)
   })
 })
