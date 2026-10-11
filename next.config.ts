@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   // Rutas que solo llevan a otra pantalla: se resuelven antes de renderizar,
