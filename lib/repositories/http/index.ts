@@ -3,6 +3,8 @@ import { apiRequest } from "@/lib/api/http-client"
 import type {
   CursoSemana,
   Fruta,
+  Jornada,
+  JornadaDelDia,
   Plan,
   PlanCalculado,
   Planta,
@@ -17,6 +19,10 @@ import type { Repositories } from "../types"
  * acordarse con el back (mismo body que `POST /planes`, no persiste).
  * `GET /jornadas/curso` también es nuevo: proyectado vs ejecutado de la
  * semana por planta (forma `CursoSemana`).
+ * Jornada: `GET /jornadas/actual?plantaId=` (día que toca ejecutar, forma
+ * `JornadaDelDia`) y `PATCH /jornadas/:id/ajuste-horas` son nuevos; el
+ * contexto define `PATCH /plan-dias/:id/ajuste-horas`, que requiere exponer
+ * el id de PLAN_DIA. Hay que acordarlos con el back.
  */
 
 export const httpRepositories: Repositories = {
@@ -60,6 +66,17 @@ export const httpRepositories: Repositories = {
         method: "POST",
         body: { comentarioAprobacion: comentario },
       }),
+  },
+  jornadas: {
+    getActual: (plantaId) =>
+      apiRequest<JornadaDelDia | null>("/jornadas/actual", { query: { plantaId } }),
+    iniciar: (input) => apiRequest<Jornada>("/jornadas", { method: "POST", body: input }),
+    registrar: (id, input) =>
+      apiRequest<Jornada>(`/jornadas/${id}/registros`, { method: "POST", body: input }),
+    ajustarHoras: (id, input) =>
+      apiRequest<Jornada>(`/jornadas/${id}/ajuste-horas`, { method: "PATCH", body: input }),
+    cerrar: (id, input) =>
+      apiRequest<Jornada>(`/jornadas/${id}/cerrar`, { method: "POST", body: input }),
   },
   curso: {
     getSemana: async (q) => {

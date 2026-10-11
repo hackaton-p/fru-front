@@ -4,6 +4,7 @@ import type { CalcularPlanInput, Plan, PlanCalculado, SemanaQuery } from "@/lib/
 import type { Repositories } from "../types"
 import { cursoMock } from "./curso-data"
 import { comercialMock, cosechaMock, FRUTAS, PLANTAS } from "./data"
+import { crearJornadasMock, type JornadasStore } from "./jornadas"
 import { calcularPlan } from "./plan-calculator"
 import { planesSemilla, ULTIMO_ID_SEMILLA } from "./planes-semilla"
 
@@ -18,9 +19,21 @@ const delay = () => new Promise((resolve) => setTimeout(resolve, LATENCIA_MS))
 const key = (q: SemanaQuery) => `${q.plantaId}-${q.frutaId}-${q.semana}`
 
 // Sobrevive al hot reload en desarrollo. Arranca con los planes de ejemplo.
-const store = globalThis as unknown as { __mockPlanes?: Map<string, Plan>; __mockPlanId?: number }
+const store = globalThis as unknown as {
+  __mockPlanes?: Map<string, Plan>
+  __mockPlanId?: number
+  __mockJornadas?: JornadasStore
+}
 const planes = (store.__mockPlanes ??= new Map(planesSemilla().map((p) => [key(p), p])))
 store.__mockPlanId ??= ULTIMO_ID_SEMILLA
+const jornadas = crearJornadasMock(
+  planes,
+  (store.__mockJornadas ??= { jornadas: new Map(), ultimoId: 0 }),
+  delay,
+)
+
+/** Solo demo (API_MOCK): borra la última jornada de la planta para repetir el flujo. */
+export const reiniciarJornadaDemo = jornadas.reiniciarDemo
 
 function planOrThrow(id: number) {
   const plan = [...planes.values()].find((p) => p.id === id)
@@ -164,7 +177,9 @@ export const mockRepositories: Repositories = {
   curso: {
     async getSemana(q) {
       await delay()
-      return cursoMock(q)
+      const plan = planes.get(key(q))
+      return cursoMock(q, new Date(), (fecha) => jornadas.cerradaDe(plan, fecha))
     },
   },
+  jornadas: jornadas.repo,
 }

@@ -1,5 +1,12 @@
 import { addDays, mondayOfIsoWeek, toIsoDate } from "@/lib/dates"
-import type { AreaCodigo, CursoSemana, PersonalPorArea, SemanaQuery } from "@/lib/domain"
+import type {
+  AreaCodigo,
+  CursoDia,
+  CursoSemana,
+  Jornada,
+  PersonalPorArea,
+  SemanaQuery,
+} from "@/lib/domain"
 
 /*
  * Curso de la semana 41 de Piura, del "REPORTE SANTA MARIA _PIURA SEM 41".
@@ -42,24 +49,66 @@ const PIURA_41 = {
   ausentismo: [0, 0.081, 0, 0.005, 0.031],
 }
 
-export function cursoMock(query: SemanaQuery, hoy = new Date()): CursoSemana | null {
+/**
+ * Un día tomado entero de una jornada cerrada en la app: el plan que ejecutó
+ * el jefe de turno y lo que pasó, sin mezclar con el reporte.
+ */
+function desdeJornada(dia: CursoDia, jornada: Jornada): CursoDia {
+  const c = jornada.cierre!
+  const kg = c.kgLoose + c.kgFijo
+  const porArea = (campo: "trabajadoresPlan" | "trabajadoresPresentes") =>
+    Object.fromEntries(jornada.areas.map((a) => [a.area, a[campo]])) as PersonalPorArea
+  const plan = jornada.areas.reduce((s, a) => s + a.trabajadoresPlan, 0)
+  const llegaron = jornada.areas.reduce((s, a) => s + a.trabajadoresLlegaron, 0)
+  return {
+    ...dia,
+    jabasEjecutadas: c.jabasProcesadas,
+    horas: c.horasTrabajadas,
+    pesoLoose: kg > 0 ? c.kgLoose / kg : 0,
+    descarte: c.jabasProcesadas > 0 ? c.jabasDescarte / c.jabasProcesadas : 0,
+    personalProyectado: porArea("trabajadoresPlan"),
+    personalEjecutado: porArea("trabajadoresPresentes"),
+    // Personas que llegaron durante la jornada (registros de personal positivos).
+    ingresos: jornada.registros.reduce(
+      (s, r) => s + (r.tipo === "PERSONAL" && r.cambioPersonal > 0 ? r.cambioPersonal : 0),
+      0,
+    ),
+    // Quienes no llegaron, como el reporte de planta (los que llegaron y no
+    // iniciaron, o salieron después, ya se ven en el personal ejecutado).
+    ausentismo: plan > 0 ? Math.max(0, 1 - llegaron / plan) : 0,
+  }
+}
+
+/**
+ * Curso de Piura sem 41. `jornadaCerrada` devuelve la jornada cerrada de un
+ * día, si la hay: sus cifras reemplazan las del reporte (el viernes en curso).
+ */
+export function cursoMock(
+  query: SemanaQuery,
+  hoy = new Date(),
+  jornadaCerrada?: (fecha: string) => Jornada | undefined,
+): CursoSemana | null {
   if (query.plantaId !== 1 || query.semana !== 41) return null
   const lunes = mondayOfIsoWeek(hoy.getUTCFullYear(), query.semana)
   const d = PIURA_41
   return {
     ...query,
     fuente: d.fuente,
-    dias: d.jabasProyectadas.map((jabasProyectadas, i) => ({
-      fecha: toIsoDate(addDays(lunes, i)),
-      jabasProyectadas,
-      jabasEjecutadas: d.jabasEjecutadas[i],
-      horas: d.horas[i],
-      pesoLoose: d.pesoLoose[i],
-      descarte: d.descarte[i],
-      personalProyectado: d.personalProyectado[i],
-      personalEjecutado: d.personalEjecutado[i],
-      ingresos: d.ingresos[i],
-      ausentismo: d.ausentismo[i],
-    })),
+    dias: d.jabasProyectadas.map((jabasProyectadas, i) => {
+      const dia: CursoDia = {
+        fecha: toIsoDate(addDays(lunes, i)),
+        jabasProyectadas,
+        jabasEjecutadas: d.jabasEjecutadas[i],
+        horas: d.horas[i],
+        pesoLoose: d.pesoLoose[i],
+        descarte: d.descarte[i],
+        personalProyectado: d.personalProyectado[i],
+        personalEjecutado: d.personalEjecutado[i],
+        ingresos: d.ingresos[i],
+        ausentismo: d.ausentismo[i],
+      }
+      const jornada = jornadaCerrada?.(dia.fecha)
+      return jornada ? desdeJornada(dia, jornada) : dia
+    }),
   }
 }

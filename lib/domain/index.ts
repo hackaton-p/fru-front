@@ -1,5 +1,6 @@
 export * from "./curso"
 export * from "./fruta"
+export * from "./jornada"
 export * from "./plan"
 export * from "./planta"
 export * from "./proyeccion"
