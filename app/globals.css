@@ -12,8 +12,8 @@
  * https://ui.shadcn.com/docs/theming
  */
 @theme inline {
-  --font-sans: var(--font-nunito);
-  --font-heading: var(--font-baloo);
+  --font-sans: var(--font-geist);
+  --font-heading: var(--font-geist);
   --font-mono: ui-monospace, monospace;
 
   --color-background: var(--background);

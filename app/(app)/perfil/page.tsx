@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentUser } from "@/lib/auth/session"
@@ -6,7 +7,7 @@ import { cambiarPlantaActiva } from "@/features/perfil/actions"
 
 export const metadata: Metadata = { title: "Perfil de usuario" }
 
-export default async function PerfilPage() {
+async function PerfilContenido() {
   const user = await getCurrentUser()
   const allPlants = await getRepositories().plantas.listar()
   const permittedIds = user.plantaIds ?? (user.rol === "ADMIN" || user.rol === "SUBGERENTE" ? undefined : [user.plantaId])
@@ -39,5 +40,13 @@ export default async function PerfilPage() {
         </CardContent>
       </Card>
     </section>
+  )
+}
+
+export default function PerfilPage() {
+  return (
+    <Suspense fallback={<div aria-busy="true" className="h-48 animate-pulse rounded-xl border bg-muted/40" />}>
+      <PerfilContenido />
+    </Suspense>
   )
 }
