@@ -96,7 +96,7 @@ export function WeeklyFlowCard({ summary }: { summary: Summary }) {
   const [paused, setPaused] = useState(false)
   const difference = summary.arrivedCrates - summary.plannedCrates
   const sign = difference > 0 ? "+" : ""
-  const percent = summary.plannedCrates > 0 ? `${sign}${(difference / summary.plannedCrates * 100).toFixed(1)}%` : "Sin base de comparación"
+  const percent = summary.plannedCrates > 0 ? `${sign}${(difference / summary.plannedCrates * 100).toFixed(1)}%` : summary.arrivedCrates === 0 ? "0.0%" : "Sin base de comparación"
   const stages = [
     { title: "Llegada real", value: formatInt(summary.arrivedCrates), note: null, color: "var(--primary)" },
     { title: "Plan semanal", value: formatInt(summary.plannedCrates), note: null, color: "var(--primary)" },

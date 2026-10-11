@@ -8,6 +8,7 @@ export const dashboardSchema = z.object({
   plants: z.array(z.object({
     id: z.string(), name: z.string(), label: z.string(),
     shiftHours: z.number().positive(), defaultYield: z.number().positive(),
+    hasPlan: z.boolean().optional(),
     weeklyFlow: z.object({ plannedCrates: z.number().nonnegative(), arrivedCrates: z.number().nonnegative() }).optional(),
     days: z.array(z.object({
       label: z.string(), closed: z.boolean(),
