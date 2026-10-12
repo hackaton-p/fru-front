@@ -7,6 +7,7 @@ import {
   type EscenarioCosecha,
   type EstadoDia,
   type EstadoPlan,
+  type MotivoAjuste,
   type Plan,
   type PlanCalculado,
   type PlanDia,
@@ -69,9 +70,37 @@ export interface RawProjection {
 export interface RawPlanDayArea {
   areaId: number
   plannedWorkers: number
+  /** Solo en planes guardados, una vez iniciada la jornada. */
+  arrivedWorkers?: number | null
+  startingWorkers?: number | null
+  presentWorkers?: number | null
+}
+
+/** Jornada (WORKDAY) tal como la devuelve el back; las fechas-hora llegan en UTC. */
+export interface RawWorkday {
+  id: number
+  planDayId: number
+  startedAt: string
+  closedAt: string | null
+  initialEstimatedHours: string | null
+  expectedDailyCrates: string
+  presentWorkers: number
+  receivedCrates: string
+  processedCrates: string
+  workedHours: string | null
+  discardedCrates: string | null
+  looseKg: string | null
+  fixedKg: string | null
+  targetMet: boolean | null
+  difference: string | null
 }
 
 export interface RawPlanDay {
+  /** Solo en planes guardados (no en la simulación). */
+  id?: number
+  adjustedHours?: string | null
+  adjustmentReason?: string | null
+  workday?: RawWorkday | null
   date: string
   targetCrates: string
   workers: number
@@ -106,6 +135,7 @@ export interface RawPlan extends RawSimulation {
   status: string
   updatedAt: string
   submittedAt: string | null
+  approvedAt?: string | null
   approvalComment: string | null
 }
 
@@ -205,6 +235,8 @@ function toPlanDia(d: RawPlanDay, areaMap: Record<number, AreaCodigo>): PlanDia 
     margen: d.margin ?? 0,
     estadoDia: d.dayStatus as EstadoDia,
     areas: d.areas.map((a) => toPlanDiaArea(a, areaMap)),
+    horasActualizadas: d.adjustedHours == null ? null : Number(d.adjustedHours),
+    motivoAjuste: (d.adjustmentReason as MotivoAjuste | null | undefined) ?? null,
   }
 }
 
@@ -237,9 +269,12 @@ export async function toPlanCalculado(
   }
 }
 
-export async function toPlan(p: RawPlan): Promise<Plan> {
-  const areaMap = await fetchAreaMap()
-  const dias = p.days.map((d) => toPlanDia(d, areaMap))
+export async function toPlan(
+  p: RawPlan,
+  areaMap?: Record<number, AreaCodigo>,
+): Promise<Plan> {
+  const areas = areaMap ?? (await fetchAreaMap())
+  const dias = p.days.map((d) => toPlanDia(d, areas))
   return {
     id: p.id,
     plantaId: p.plantId,
@@ -249,7 +284,9 @@ export async function toPlan(p: RawPlan): Promise<Plan> {
     estado: p.status as EstadoPlan,
     updatedAt: p.updatedAt,
     fechaEnvio: p.submittedAt,
+    fechaAprobacion: p.approvedAt ?? null,
     comentarioAprobacion: p.approvalComment,
+    diasCerrados: p.days.filter((d) => d.workday?.closedAt).length,
     escenarioCosecha: p.harvestScenario as EscenarioCosecha,
     parametrosUsados: toParametros(p.parametersSnapshot),
     parametrosModificados: p.hasModifiedParameters,

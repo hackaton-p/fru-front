@@ -97,10 +97,47 @@ export interface JornadaDelDia {
   jornada: Jornada | null
 }
 
+/** Avance de un día del plan: sin jornada, con la jornada abierta o ya cerrada. */
+export type EjecucionDia = "PENDIENTE" | EstadoJornada
+
+/** Plan aprobado (o en ejecución / cerrado) con el avance de cada uno de sus días. */
+export interface PlanEnEjecucion {
+  plan: Plan
+  /** Por fecha del día (YYYY-MM-DD). */
+  ejecucion: Record<string, EjecucionDia>
+}
+
+/** El jefe de turno solo indica la fruta que tiene y con cuántas personas arranca. */
 export interface IniciarJornadaInput {
   planId: number
   fecha: string
-  areas: { area: AreaCodigo; llegaron: number; inician: number }[]
+  /** Trabajadores con los que inicia (se reparten por área según el plan). */
+  trabajadores: number
+  /** Jabas que se esperan procesar en el día (desde las toneladas que se tienen). */
+  jabasDia: number
+}
+
+/**
+ * Reparte el total de trabajadores entre las áreas en proporción al plan
+ * (mayor resto), para registrar la asistencia por área que pide el back.
+ */
+export function repartirPorArea(
+  areas: { area: AreaCodigo; trabajadoresPlan: number }[],
+  total: number,
+): { area: AreaCodigo; trabajadores: number }[] {
+  const plan = areas.reduce((s, a) => s + a.trabajadoresPlan, 0)
+  if (areas.length === 0) return []
+  if (plan === 0) return areas.map((a, i) => ({ area: a.area, trabajadores: i === 0 ? total : 0 }))
+  const exactos = areas.map((a) => (a.trabajadoresPlan / plan) * total)
+  const base = exactos.map(Math.floor)
+  let resto = total - base.reduce((s, n) => s + n, 0)
+  const orden = exactos.map((x, i) => ({ i, frac: x - base[i] })).sort((a, b) => b.frac - a.frac)
+  for (const { i } of orden) {
+    if (resto <= 0) break
+    base[i] += 1
+    resto -= 1
+  }
+  return areas.map((a, i) => ({ area: a.area, trabajadores: base[i] }))
 }
 
 /** `hora` es "HH:mm" del día de la jornada. */

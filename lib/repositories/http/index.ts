@@ -3,6 +3,7 @@ import { apiRequest } from "@/lib/api/http-client"
 import type { Fruta, ProyeccionCosechaDia, ProyeccionComercialCliente } from "@/lib/domain"
 import type { Repositories } from "../types"
 import {
+  fetchAreaMap,
   fetchCustomerMap,
   toCreatePlanBody,
   toPlan,
@@ -18,6 +19,8 @@ import {
   type RawSimulation,
 } from "./mappers"
 import { ApiError } from "@/lib/api/errors"
+import { httpCurso } from "./curso"
+import { httpJornadas } from "./jornadas"
 
 /*
  * Implementación contra el API NestJS real. Rutas y campos en inglés
@@ -25,16 +28,9 @@ import { ApiError } from "@/lib/api/errors"
  * nombres en español son los del dominio del front. El mapeo entre ambos
  * contratos vive en ./mappers.
  *
- * `curso` y `jornadas` quedan sin implementar: las pantallas de subgerente
- * (curso de la semana) y jefe de turno asumen rutas `/jornadas/*` que no
- * existen en el back. Lo real es `GET /dashboard` (proyectado vs ejecutado
- * de la semana) y el módulo `workdays` (`/workdays`, `/workdays/:id`,
- * `/workdays/:id/records`, `/workdays/:id/close`, `/plan-days/:id/hours`,
- * `/alerts`) — falta mapear esas formas a `CursoSemana`/`Jornada`.
+ * El curso de la semana (subgerente) se mapea contra `GET /dashboard` en
+ * ./curso y las jornadas del jefe de turno contra `workdays` en ./jornadas.
  */
-
-const SIN_MAPEAR = (ruta: string) =>
-  new ApiError(`${ruta} no está mapeado contra el back real todavía`, 501)
 
 export const httpRepositories: Repositories = {
   plantas: {
@@ -124,7 +120,8 @@ export const httpRepositories: Repositories = {
         items.push(...res.items)
         if (res.items.length < 100) break
       }
-      return Promise.all(items.map(toPlan))
+      const areaMap = await fetchAreaMap()
+      return Promise.all(items.map((p) => toPlan(p, areaMap)))
     },
     getById: async (id) => toPlan(await apiRequest<RawPlan>(`/plans/${id}`)),
     getVigente: async (q) => {
@@ -164,26 +161,6 @@ export const httpRepositories: Repositories = {
       return toPlan(res)
     },
   },
-  curso: {
-    getSemana: async () => {
-      throw SIN_MAPEAR("GET /jornadas/curso (real: GET /dashboard)")
-    },
-  },
-  jornadas: {
-    getActual: async () => {
-      throw SIN_MAPEAR("GET /jornadas/actual (real: componer desde /plans + /workdays)")
-    },
-    iniciar: async () => {
-      throw SIN_MAPEAR("POST /jornadas (real: POST /workdays)")
-    },
-    registrar: async () => {
-      throw SIN_MAPEAR("POST /jornadas/:id/registros (real: POST /workdays/:id/records)")
-    },
-    ajustarHoras: async () => {
-      throw SIN_MAPEAR("PATCH /jornadas/:id/ajuste-horas (real: PATCH /plan-days/:id/hours)")
-    },
-    cerrar: async () => {
-      throw SIN_MAPEAR("POST /jornadas/:id/cerrar (real: POST /workdays/:id/close)")
-    },
-  },
+  curso: httpCurso,
+  jornadas: httpJornadas,
 }

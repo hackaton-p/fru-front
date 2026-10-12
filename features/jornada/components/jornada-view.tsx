@@ -6,15 +6,16 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { capitalize, formatDiaLargo, formatHoras, formatInt } from "@/lib/format"
+import { capitalize, formatDiaLargo } from "@/lib/format"
 import { horaDe, horaSugerida } from "../lib/jornada"
 import type { JornadaData } from "../queries"
 import { CerrarJornadaForm } from "./cerrar-jornada-form"
 import { CierreResultado } from "./cierre-resultado"
+import { DetalleDia } from "./detalle-dia"
 import { EstadoJornada } from "./estado-jornada"
 import { EtapasJornada } from "./etapas-jornada"
 import { IniciarJornadaForm } from "./iniciar-jornada-form"
-import { PersonalAreasTable } from "./personal-areas-table"
+import { PlanesAprobados } from "./planes-aprobados"
 import { RegistroForm } from "./registro-form"
 import { RegistrosList } from "./registros-list"
 import { ReiniciarDemoButton } from "./reiniciar-demo-button"
@@ -39,22 +40,25 @@ export function SoloJefeTurno() {
 
 /** Jefe de turno · Jornada: iniciar, registrar durante la jornada y cerrar. */
 export function JornadaView({ data }: { data: JornadaData }) {
-  const { planta, actual, demo } = data
+  const { planta, actual, planes, demo } = data
 
   if (!actual) {
     return (
-      <Empty className="flex-none border border-dashed py-10">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <CalendarX />
-          </EmptyMedia>
-          <EmptyTitle className="font-heading text-xl">No hay una jornada programada</EmptyTitle>
-          <EmptyDescription>
-            Cuando el subgerente apruebe el plan de la semana de Planta {planta.nombre}, aquí
-            aparecerá el día que toca ejecutar.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <>
+        <Empty className="flex-none border border-dashed py-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CalendarX />
+            </EmptyMedia>
+            <EmptyTitle className="font-heading text-xl">No hay una jornada programada</EmptyTitle>
+            <EmptyDescription>
+              Cuando el subgerente apruebe el plan de la semana de Planta {planta.nombre}, aquí
+              aparecerá el día que toca ejecutar.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+        <PlanesAprobados planes={planes} actual={null} />
+      </>
     )
   }
 
@@ -71,13 +75,13 @@ export function JornadaView({ data }: { data: JornadaData }) {
             Jornada · <span className="text-primary">{capitalize(formatDiaLargo(dia.fecha))}</span>
           </h1>
           <p className="text-muted-foreground">
-            Planta {planta.nombre} · Inicio programado {inicioProgramado} · Meta{" "}
-            {formatInt(dia.jabasMeta)} jabas · Plan: {formatInt(dia.trabajadores)} trabajadores en{" "}
-            {formatHoras(dia.horas)}
+            Planta {planta.nombre} · Semana {plan.semana} · Inicio programado {inicioProgramado}
           </p>
         </div>
         <EtapasJornada actual={etapa} />
       </div>
+
+      <DetalleDia dia={dia} jornada={jornada} />
 
       {!jornada ? (
         <IniciarJornadaForm
@@ -85,9 +89,9 @@ export function JornadaView({ data }: { data: JornadaData }) {
           fecha={dia.fecha}
           meta={dia.jabasMeta}
           horasPlan={dia.horas}
+          trabajadoresPlan={dia.trabajadores}
           horaInicio={inicioProgramado}
           parametros={p}
-          areas={dia.areas.map((a) => ({ area: a.area, plan: a.trabajadoresPlan }))}
           plantaNombre={planta.nombre}
         />
       ) : jornada.estado === "ABIERTA" ? (
@@ -103,11 +107,9 @@ export function JornadaView({ data }: { data: JornadaData }) {
                   ? { recibidas: a.jabasRecibidasAcum, procesadas: a.jabasProcesadasAcum }
                   : null
               })()}
-              meta={dia.jabasMeta}
             />
             <RegistrosList jornada={jornada} dia={dia} parametros={p} />
           </div>
-          <PersonalAreasTable jornada={jornada} />
           <CerrarJornadaForm
             jornadaId={jornada.id}
             horasSugeridas={jornada.estimacion.horasEstimadas}
@@ -124,6 +126,9 @@ export function JornadaView({ data }: { data: JornadaData }) {
           {demo ? <ReiniciarDemoButton /> : null}
         </CierreResultado>
       )}
+
+      {/* Los planes aprobados solo acompañan el inicio; durante y al cierre la pantalla es de la jornada. */}
+      {!jornada ? <PlanesAprobados planes={planes} actual={actual} /> : null}
     </>
   )
 }

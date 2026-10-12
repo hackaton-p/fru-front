@@ -89,6 +89,8 @@ export interface Plan extends PlanCalculado {
   fechaEnvio?: string | null
   fechaAprobacion?: string | null
   comentarioAprobacion?: string | null
+  /** Días con la jornada cerrada (solo planes en ejecución o cerrados, si el back lo informa). */
+  diasCerrados?: number
 }
 
 /** Body de `POST /planes/simular` y `POST /planes`. */

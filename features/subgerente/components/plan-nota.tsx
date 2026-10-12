@@ -11,8 +11,18 @@ export function PlanNota({ plan }: { plan: Plan }) {
       return enviado ? <>Enviado {enviado}</> : <>Enviado a aprobación</>
     case "APROBADO":
       return aprobado ? <>Aprobado {aprobado}</> : <>Aprobado</>
-    case "EN_EJECUCION":
-      return aprobado ? <>En curso · aprobado {aprobado}</> : <>En curso</>
+    case "EN_EJECUCION": {
+      // El plan pasa a cerrado recién cuando se cierran las jornadas de todos sus días.
+      const avance =
+        plan.diasCerrados != null ? ` · ${plan.diasCerrados} de ${plan.dias.length} días cerrados` : ""
+      return aprobado ? (
+        <>
+          En curso{avance} · aprobado {aprobado}
+        </>
+      ) : (
+        <>En curso{avance}</>
+      )
+    }
     case "RECHAZADO":
       return aprobado ? <>Devuelto {aprobado}</> : <>Devuelto al planificador</>
     case "CERRADO":

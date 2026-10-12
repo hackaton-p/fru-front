@@ -25,9 +25,11 @@ const horaSchema = z.string().regex(/^\d{2}:\d{2}$/, "Ingresa la hora en formato
 const iniciarSchema = z.object({
   planId: idSchema,
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  areas: z
-    .array(z.object({ area: z.enum(AREAS), llegaron: entero("Llegaron"), inician: entero("Inician") }))
-    .min(1),
+  trabajadores: entero("Trabajadores").min(1, "Indica con cuántas personas inicias."),
+  jabasDia: z
+    .number({ error: "Ingresa las toneladas que tienes." })
+    .int()
+    .positive("Ingresa las toneladas que tienes."),
 })
 
 const registroSchema = z.discriminatedUnion("tipo", [

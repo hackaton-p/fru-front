@@ -63,9 +63,12 @@ describe("filasCurso", () => {
     expect(ej.semana).toEqual({ valor: "44,429", bajo: true })
   })
 
-  it("totales de personal por semana: 1,369 proyectado y 970 ejecutado", () => {
-    const totales = filas.filter((f) => f.tipo === "dato" && f.label.startsWith("Total"))
-    expect(totales.map((f) => (f.tipo === "dato" ? f.semana.valor : ""))).toEqual(["1,369", "970"])
+  it("personal sin subdividir: 1,369 proyectado en la semana y 784 ejecutado en los días cerrados", () => {
+    expect(fila(filas, "Personal proyectado").semana.valor).toBe("1,369")
+    const ejecutado = fila(filas, "Personal ejecutado")
+    expect(ejecutado.semana).toEqual({ valor: "784", bajo: true })
+    expect(ejecutado.dias.at(-1)?.valor).toBe("en curso")
+    expect(filas.some((f) => f.tipo === "seccion")).toBe(false)
   })
 
   it("rendimiento por día con 1 decimal", () => {
@@ -74,14 +77,14 @@ describe("filasCurso", () => {
 })
 
 describe("lecturaSemana", () => {
-  it("explica la falta de personal, el rendimiento y el descarte con los datos", () => {
+  it("explica la falta de personal y el rendimiento con los datos", () => {
     const lectura = lecturaSemana(curso, resumirCurso(curso)!, 10)
     expect(lectura[0]).toBe(
-      "Se proyectaron 247 a 284 personas por día y se tuvieron 186 a 209. La falta de personal de packing (~76 personas por día) explica que las horas suban de 8.3 h a 11.8 h.",
+      "Se proyectaron 247 a 284 personas por día y se tuvieron 191 a 209. La falta de personal de packing (~71 personas por día) explica que las horas suban de 8.3 h a 11.8 h.",
     )
     expect(lectura[1]).toMatch(
       /^El rendimiento se mantiene entre 5\.\d y 6\.\d jabas por persona-hora; con el personal planificado/,
     )
-    expect(lectura[2]).toBe("El descarte subió de 7.9% a 10.6% a lo largo de la semana.")
+    expect(lectura).toHaveLength(2)
   })
 })

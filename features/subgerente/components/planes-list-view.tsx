@@ -36,7 +36,7 @@ function AccionPlan({ plan }: { plan: Plan }) {
   if (plan.estado === "EN_EJECUCION") {
     return (
       <Button asChild variant="outline">
-        <Link href={`/subgerente/curso?planta=${plan.plantaId}&semana=${plan.semana}`}>
+        <Link href={`/subgerente/curso?plan=${plan.id}`}>
           <ChartColumn data-icon="inline-start" aria-hidden />
           Ver curso
         </Link>
