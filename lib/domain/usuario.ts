@@ -6,4 +6,6 @@ export interface Usuario {
   rol: Rol
   /** null = ve todas las plantas (subgerente). */
   plantaId: number | null
+  /** Plantas asignadas al usuario cuando su acceso cubre varias plantas. */
+  plantaIds?: number[]
 }

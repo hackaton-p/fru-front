@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
-import { Baloo_2, Nunito } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-/* Tipografías de marca: se exponen como --font-heading y --font-sans en globals.css. */
-const baloo = Baloo_2({
+/* Tipografías de marca autoalojadas (el build no depende de Google Fonts):
+ * se exponen como --font-heading y --font-sans en globals.css. */
+const baloo = localFont({
+  src: "../public/fonts/baloo2-latin.woff2",
   variable: "--font-baloo",
-  subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: "600 700",
+  display: "swap",
 });
 
-const nunito = Nunito({
+const nunito = localFont({
+  src: "../public/fonts/nunito-latin.woff2",
   variable: "--font-nunito",
-  subsets: ["latin"],
+  weight: "200 1000",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

@@ -50,9 +50,9 @@ export function JornadaView({ data }: { data: JornadaData }) {
             <EmptyMedia variant="icon">
               <CalendarX />
             </EmptyMedia>
-            <EmptyTitle className="font-heading text-xl">No hay una jornada programada</EmptyTitle>
+            <EmptyTitle className="font-heading text-xl">No hay una jornada configurada para esta semana</EmptyTitle>
             <EmptyDescription>
-              Cuando el subgerente apruebe el plan de la semana de Planta {planta.nombre}, aquí
+              Subgerencia debe aprobar el plan de Planta {planta.nombre}. Cuando esté listo, aquí
               aparecerá el día que toca ejecutar.
             </EmptyDescription>
           </EmptyHeader>
